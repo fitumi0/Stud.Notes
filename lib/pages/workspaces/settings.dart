@@ -1,7 +1,5 @@
 import 'package:flutter/material.dart';
 import 'package:flutter_proj/database/database_helper.dart';
-import 'package:shared_preferences/shared_preferences.dart';
-import '/database/models/lesson.dart';
 
 ///
 /// TODO: ADD THEMES FONTS AND
@@ -59,9 +57,7 @@ class _SettingsPageState extends State<SettingsPage>
                                       children: <Widget>[
                                         Padding(
                                           padding: EdgeInsets.all(8.0),
-                                          child: TextFormField(
-
-                                          ),
+                                          child: Text("Список пар")
                                         ),
                                         Padding(
                                           padding: EdgeInsets.all(8.0),

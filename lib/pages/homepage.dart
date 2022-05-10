@@ -1,6 +1,4 @@
 import 'package:flutter/material.dart';
-import 'package:flutter_proj/pages/lessonspage.dart';
-import 'package:flutter_proj/pages/calendarpage.dart';
 
 class HomePage extends StatefulWidget {
   const HomePage();
@@ -44,13 +42,12 @@ class _TODOSState extends State<TODOS>
   get groups => <String>[
     "- В настройки залить изменение всех выпадающих списков (+ табличка для каждой)",
     "- Занятия -> Студенты -> Список групп динамически -> в каждой группе список студентов динамически",
-    "- Обновление UI в занятиях",
     "- Карточка пары - макет",
     "- Карточка студента - макет",
     "- КАЛЕНДАРЬ!!!!!!!!!",
     "- Парсер пар принял ислам - разрабы расписания красавчики",
     "- Откуда-то брать студентов (???)",
-    "  Last Update: 5.05.22 -- 18:10"
+    "  Last Update: 10.05.22 -- 16:04"
   ];
 
   @override

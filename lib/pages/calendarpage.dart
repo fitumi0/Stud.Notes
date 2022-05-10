@@ -3,7 +3,6 @@ import 'dart:collection';
 import 'package:flutter_proj/pages/workspaces/utils.dart';
 import 'package:flutter/material.dart';
 import 'package:table_calendar/table_calendar.dart';
-import 'package:flutter_proj/pages/workspaces/add_lesson.dart';
 
 ///
 /// TODO: ADD CALENDAR
@@ -134,10 +133,7 @@ class _CalendarPageState extends State<CalendarPage> {
       ),
       floatingActionButton: FloatingActionButton(
         onPressed: () {
-          Navigator.push(context, MaterialPageRoute(
-              builder: (context) => AddLessonPage(key: UniqueKey(), )
-          )
-          );
+
         },
         child: Icon(Icons.add),
       ),
