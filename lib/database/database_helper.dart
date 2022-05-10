@@ -1,18 +1,17 @@
 import 'dart:async';
 import 'dart:io';
 
-import 'package:flutter/services.dart';
 import 'package:flutter_proj/database/models/group.dart';
 import 'package:flutter_proj/database/models/student.dart';
 import 'package:path/path.dart';
 import 'package:path_provider/path_provider.dart';
 import 'package:sqflite/sqflite.dart';
 import 'models/lesson.dart';
+import 'models/DropDownListModel.dart';
 
-
-class DatabaseHelper{
+class DatabaseHelper {
   static int currentTimeInSeconds() {
-    var ms = (new DateTime.now()).millisecondsSinceEpoch;
+    var ms = (DateTime.now()).millisecondsSinceEpoch;
     return (ms / 1000).round();
   }
 
@@ -57,31 +56,74 @@ class DatabaseHelper{
         VK TEXT,
         TG TEXT,
         rating INT)''');
+
+    await db.execute('''CREATE TABLE IF NOT EXISTS lessons_list(
+          id INTEGER PRIMARY KEY,
+          name TEXT NOT NULL)''');
+
+    await db.execute('''CREATE TABLE IF NOT EXISTS groups_list(
+          id INTEGER PRIMARY KEY,
+          name TEXT NOT NULL)''');
+
+    await db.execute('''CREATE TABLE IF NOT EXISTS course_list(
+          id INTEGER PRIMARY KEY,
+          name TEXT NOT NULL)''');
+
+    await db.execute('''CREATE TABLE IF NOT EXISTS startTime_list(
+          id INTEGER PRIMARY KEY,
+          name TEXT NOT NULL)''');
+
+    await db.execute('''CREATE TABLE IF NOT EXISTS lessonTypes_list(
+          id INTEGER PRIMARY KEY,
+          name TEXT NOT NULL)''');
   }
 
-    Future<int> Create() async {
-      Database db = await instance.database;
-      await db.execute('''CREATE TABLE IF NOT EXISTS lessons_list(
-          id INTEGER PRIMARY KEY,
-          name TEXT NOT NULL)''');
-      await db.execute('''CREATE TABLE IF NOT EXISTS groups_list(
-          id INTEGER PRIMARY KEY,
-          name TEXT NOT NULL)''');
-      await db.execute('''CREATE TABLE IF NOT EXISTS course_list(
-          id INTEGER PRIMARY KEY,
-          name TEXT NOT NULL)''');
-      await db.execute('''CREATE TABLE IF NOT EXISTS startTime_list(
-          id INTEGER PRIMARY KEY,
-          name TEXT NOT NULL)''');
-      await db.execute('''CREATE TABLE IF NOT EXISTS lessonTypes_list(
-          id INTEGER PRIMARY KEY,
-          name TEXT NOT NULL)''');
-      return 1;
+  ///
+  ///
+  /// DROPDOWN
+
+  Future<List<DropDownListModel>> getLessonsDropDownList() async {
+    Database db = await instance.database;
+    var lessons = await db.query('lessons_list', orderBy: 'name');
+    List<DropDownListModel> LessonList = lessons.isNotEmpty
+        ? lessons.map((c) => DropDownListModel.fromMap(c)).toList()
+        : [];
+    return LessonList;
   }
 
+  Future<int> insertIntoLessonsDropDownList(DropDownListModel lesson) async {
+    Database db = await instance.database;
+    return await db.insert('lessons_list', lesson.toMap());
+  }
+
+  Future<int> removeFromLessonsDropDownList(int id) async {
+    Database db = await instance.database;
+    return await db.delete('lessons_list', where: 'id = ?', whereArgs: [id]);
+  }
+  /// ===============================================================
+  
+  Future<List<DropDownListModel>> getGroupsDropDownList() async {
+    Database db = await instance.database;
+    var lessons = await db.query('groups_list', orderBy: 'name');
+    List<DropDownListModel> LessonList = lessons.isNotEmpty
+        ? lessons.map((c) => DropDownListModel.fromMap(c)).toList()
+        : [];
+    return LessonList;
+  }
+
+  Future<int> insertIntoGroupsDropDownList(DropDownListModel lesson) async {
+    Database db = await instance.database;
+    return await db.insert('groups_list', lesson.toMap());
+  }
+
+  Future<int> removeFromGroupsDropDownList(int id) async {
+    Database db = await instance.database;
+    return await db.delete('groups_list', where: 'id = ?', whereArgs: [id]);
+  }
+
+  /// END DROPDOWNS
   ///
   /// LESSONS
-  ///
 
   Future<List<Lesson>> getLessons() async {
     Database db = await instance.database;
@@ -144,9 +186,8 @@ class DatabaseHelper{
   Future<List<Group>> getGroups() async {
     Database db = await instance.database;
     var groups = await db.query('groups', orderBy: 'name');
-    List<Group> GroupList = groups.isNotEmpty
-        ? groups.map((c) => Group.fromMap(c)).toList()
-        : [];
+    List<Group> GroupList =
+        groups.isNotEmpty ? groups.map((c) => Group.fromMap(c)).toList() : [];
     return GroupList;
   }
 
@@ -165,6 +206,4 @@ class DatabaseHelper{
     return await db.update('groups', group.toMap(),
         where: "id = ?", whereArgs: [group.id]);
   }
-
 }
-

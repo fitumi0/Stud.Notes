@@ -1,7 +1,9 @@
 import 'package:flutter/material.dart';
 import 'package:flutter_proj/pages/workspaces/StudMenu.dart';
 import '../database/database_helper.dart';
+import '../database/models/DropDownListModel.dart';
 import '../database/models/lesson.dart';
+import '../database/models/student.dart';
 import 'workspaces/add_lesson_helper.dart';
 
 ///
@@ -70,7 +72,7 @@ class LessonsTab extends StatefulWidget {
 class _LessonsTabState extends State<LessonsTab>
   with AutomaticKeepAliveClientMixin<LessonsTab> {
 
-  int? selectedId;
+  int? selectedID;
 
   TextEditingController _controllerName = TextEditingController();
   List<String> time = [
@@ -127,8 +129,7 @@ class _LessonsTabState extends State<LessonsTab>
       body: Center(
         child: FutureBuilder<List<Lesson>>(
             future: DatabaseHelper.instance.getLessons(),
-            builder: (BuildContext context,
-                AsyncSnapshot<List<Lesson>> snapshot) {
+            builder: (BuildContext context, snapshot) {
               if (!snapshot.hasData) {
                 return Center(child: Text('Loading...'));
               }
@@ -138,11 +139,16 @@ class _LessonsTabState extends State<LessonsTab>
                 children: snapshot.data!.map((lesson) {
                   return Center(
                     child: Card(
+                      /*color: selectedID == lesson.id
+                          ? Colors.cyanAccent
+                          : Colors.blueGrey,*/
                       child: ListTile(
                         title: Text(lesson.name),
                         onTap: () {
                           setState(() {
                             // TODO: ITEM MENU
+                              // selectedID = lesson.id;
+
                           });
                         },
                         onLongPress: () {
@@ -162,6 +168,7 @@ class _LessonsTabState extends State<LessonsTab>
         onPressed: () {
           showDialogue();
         },
+        tooltip: "Добавить занятие",
         child: Icon(Icons.add),
       ),
     );
@@ -195,6 +202,7 @@ class _LessonsTabState extends State<LessonsTab>
         builder: (BuildContext context) {
           return AlertDialog(
             content: Stack(
+
               clipBehavior: Clip.none, children: <Widget>[
               Positioned(
                 right: -40.0,
@@ -379,53 +387,55 @@ class StudGroupsPage extends StatefulWidget {
 class _StudGroupsPageState extends State<StudGroupsPage>
     with AutomaticKeepAliveClientMixin<StudGroupsPage> {
   // TODO: dynamic get all groups from db
-  var groups = DatabaseHelper.instance.getGroups().toString();
-/*      <String>[
-        "ПИб-1 курс",
-        "ПИб-2 курс",
-        "ПИб-3 курс",
-        "ПИб-4 курс",
-        "ИВТ-1 курс",
-        "ИВТ-2 курс",
-        "ИВТ-3 курс",
-        "ИВТ-4 курс"
-      ];*/
+  var groups = DatabaseHelper.instance.getGroupsDropDownList();
+
 
   @override
   Widget build(BuildContext context) {
-    // TODO: разобраться со структурой всей этой хуйни
     // TODO: сделать красивый ListTile, OnTap => парсим студентов (пока конст) и отображаем на экране
     return Scaffold(
       body: SafeArea(
         child: Center(
-          child: ListView.builder(
-            itemCount: groups.length,
-            itemBuilder: (context, index) {
-              return WillPopScope(
-                onWillPop: null,
-                child: ListTile(
-                    title: Text('${groups[index]}'),
-                    onTap: () {
-                      Navigator.of(context).push<void>(
-                        MaterialPageRoute<void>(
-                          builder: (BuildContext context) {
-                            return GetStudents();
+          child: FutureBuilder<List<DropDownListModel>>(
+              future: DatabaseHelper.instance.getGroupsDropDownList(),
+              builder: (BuildContext context, snapshot) {
+                if (!snapshot.hasData) {
+                  return Center(child: Text('Loading...'));
+                }
+                return snapshot.data!.isEmpty
+                    ? Center(child: Text('Пусто'))
+                    : ListView(
+                  children: snapshot.data!.map((group) {
+                    return Center(
+                      child: Card(
+                        child: ListTile(
+                          title: Text(group.name),
+                          onTap: () {
+                            setState(() {
+                              // TODO: ITEM MENU
+
+                            });
+                          },
+                          onLongPress: () {
+                            setState(() {
+                              DatabaseHelper.instance.removeLesson(group.id!);
+                            });
                           },
                         ),
-                      );
-                    }),
-              );
-            },
-          ),
+                      ),
+                    );
+                  }).toList(),
+                );
+              }),
         ),
       ),
-      //TODO: DO ONE BUTTON FOR ONE PAGE UNIQ
-      floatingActionButton: new FloatingActionButton(
-        heroTag: 'AddGroup',
+      floatingActionButton: FloatingActionButton(
+        heroTag: 'refresh',
         onPressed: () {
-          // TODO: ADD WINDOW TO ADD GROUPS
+          setState(() {});
         },
-        child: Icon(Icons.add),
+        tooltip: "Обновить",
+        child: Icon(Icons.refresh),
       ),
     );
   }
