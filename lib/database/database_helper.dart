@@ -1,7 +1,6 @@
 import 'dart:async';
 import 'dart:io';
 
-import 'package:flutter_proj/database/models/group.dart';
 import 'package:flutter_proj/database/models/student.dart';
 import 'package:path/path.dart';
 import 'package:path_provider/path_provider.dart';
@@ -41,20 +40,13 @@ class DatabaseHelper {
         type TEXT NOT NULL,
         state INTEGER NOT NULL)''');
 
-    await db.execute('''CREATE TABLE IF NOT EXISTS groups(
-        id INTEGER PRIMARY KEY,
-        name TEXT NOT NULL,
-        course INT NOT NULL)''');
-
     await db.execute('''CREATE TABLE IF NOT EXISTS students(
         id INTEGER PRIMARY KEY,
         secondname TEXT NOT NULL,
         firstname TEXT NOT NULL,
         groupp TEXT NOT NULL,
         course INT NOT NULL,
-        email TEXT,
-        VK TEXT,
-        TG TEXT,
+        social TEXT,
         rating INT)''');
 
     await db.execute('''CREATE TABLE IF NOT EXISTS lessons_list(
@@ -77,6 +69,13 @@ class DatabaseHelper {
           id INTEGER PRIMARY KEY,
           name TEXT NOT NULL)''');
   }
+
+  Future<bool> isInTable(String firstname, String secondname, String group, String course) async{
+    Database db = await instance.database;
+    var result = await db.rawQuery('SELECT * FROM students WHERE firstname=\'${firstname}\' AND secondname=\'${secondname}\' AND groupp=\'${group}\' AND course=${course}');
+    return result.isNotEmpty;
+  }
+
 
   ///
   ///
@@ -120,6 +119,26 @@ class DatabaseHelper {
     Database db = await instance.database;
     return await db.delete('groups_list', where: 'id = ?', whereArgs: [id]);
   }
+  /// ===============================================================
+
+  Future<List<Student>> getStudentsDropDownList() async {
+    Database db = await instance.database;
+    var student = await db.query('students', orderBy: 'secondname');
+    List<Student> StudentList = student.isNotEmpty
+        ? student.map((c) => Student.fromMap(c)).toList()
+        : [];
+    return StudentList;
+  }
+
+  Future<int> insertIntoStudentsDropDownList(Student student) async {
+    Database db = await instance.database;
+    return await db.insert('students', student.toMap());
+  }
+
+  Future<int> removeFromStudentsDropDownList(int id) async {
+    Database db = await instance.database;
+    return await db.delete('students', where: 'id = ?', whereArgs: [id]);
+  }
 
   /// END DROPDOWNS
   ///
@@ -154,9 +173,10 @@ class DatabaseHelper {
   ///
   /// STUDENTS
 
-  Future<List<Student>> getStudents() async {
+  Future<List<Student>> getStudents(String group) async {
     Database db = await instance.database;
-    var students = await db.query('students', orderBy: 'secondname');
+    var students = await db.rawQuery("SELECT * FROM students WHERE groupp=\'${group}\' ORDER BY secondname ASC");
+    print(students);
     List<Student> StudentList = students.isNotEmpty
         ? students.map((c) => Student.fromMap(c)).toList()
         : [];
@@ -181,29 +201,6 @@ class DatabaseHelper {
 
   /// END STUDENTS
   ///
-  /// GROUPS
+  ///
 
-  Future<List<Group>> getGroups() async {
-    Database db = await instance.database;
-    var groups = await db.query('groups', orderBy: 'name');
-    List<Group> GroupList =
-        groups.isNotEmpty ? groups.map((c) => Group.fromMap(c)).toList() : [];
-    return GroupList;
-  }
-
-  Future<int> insertGroups(Group group) async {
-    Database db = await instance.database;
-    return await db.insert('groups', group.toMap());
-  }
-
-  Future<int> removeGroups(int id) async {
-    Database db = await instance.database;
-    return await db.delete('groups', where: 'id = ?', whereArgs: [id]);
-  }
-
-  Future<int> updateGroups(Group group) async {
-    Database db = await instance.database;
-    return await db.update('groups', group.toMap(),
-        where: "id = ?", whereArgs: [group.id]);
-  }
 }
