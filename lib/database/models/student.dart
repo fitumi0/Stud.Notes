@@ -4,9 +4,7 @@ class Student {
   final String firstname;
   final String groupp;
   final int course;
-  final String email;
-  final String VK;
-  final String TG;
+  final String social;
   final int rating;
   Student({
     this.id,
@@ -14,9 +12,7 @@ class Student {
     required this.firstname,
     required this.course,
     required this.groupp,
-    required this.email,
-    required this.VK,
-    required this.TG,
+    required this.social,
     required this.rating
   });
 
@@ -26,9 +22,7 @@ class Student {
     firstname: json["firstname"],
     course: json["course"],
     groupp: json["groupp"],
-    email: json["email"],
-    VK: json["VK"],
-    TG: json["TG"],
+    social: json["social"],
     rating: json["rating"],
   );
 
@@ -39,9 +33,7 @@ class Student {
       'firstname': firstname,
       'course': course,
       'groupp': groupp,
-      'email': email,
-      'VK': VK,
-      'TG': TG,
+      'social': social,
       'rating': rating,
     };
   }
