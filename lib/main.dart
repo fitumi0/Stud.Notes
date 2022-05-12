@@ -1,9 +1,11 @@
 // @dart=2.9
+import 'package:animated_theme_switcher/animated_theme_switcher.dart';
 import 'package:flutter/material.dart';
 import 'package:flutter_proj/pages/lessonspage.dart';
 import 'package:flutter_proj/pages/calendarpage.dart';
 import 'package:flutter_proj/pages/homepage.dart';
 import 'package:flutter_proj/pages/workspaces/settings.dart';
+import 'package:flutter_proj/pages/workspaces/themes.dart';
 import 'package:intl/date_symbol_data_local.dart';
 
 void main() {
@@ -11,38 +13,30 @@ void main() {
   initializeDateFormatting().then((_) => runApp(MyApp()));
 }
 
+String _title = "Главная";
+
 class MyApp extends StatelessWidget {
+
   const MyApp({key}) : super(key: key);
 
-  static const String _title = 'StudNotes';
 
   @override
   Widget build(BuildContext context) {
-    return MaterialApp(
-      title: _title, // отвечает за название в диспетчере приложений. Сделать одинаковую с тайтлом и названием приложения
-      theme:
-      ThemeData(
-          brightness: Brightness.light,
-          primaryColor: Colors.blue,
-          primarySwatch: Colors.blueGrey,
-          iconTheme: IconThemeData(color: Colors.black),
-          fontFamily: "Montserrat-Bold",
-          textTheme: const TextTheme(
-              subtitle1: TextStyle(
-                  fontFamily: "Montserrat-SemiBold",
-                  fontSize: 20,
-                  fontWeight: FontWeight.w600,
-                  color: Colors.black),
-              subtitle2: TextStyle(
-                  fontFamily: "Montserrat-Medium",
-                  fontSize: 15,
-                  fontWeight: FontWeight.w500,
-                  color: Colors.black54))),
+    // final isPlatformDark = WidgetsBinding.instance.window.platformBrightness == Brightness.light;
+    // final initTheme = isPlatformDark ? pinkTheme : mainTheme;
+    final initTheme = mainTheme;
+    return ThemeProvider(
+        initTheme: initTheme,
+      builder: (_, myTheme){
+      return MaterialApp(
+      title: _title,
+      theme: myTheme,
       home: const NavigatePanel(),
+      );
+        }
     );
   }
 }
-
 
 class NavigatePanel extends StatefulWidget {
   const NavigatePanel({key}) : super(key: key);
@@ -63,6 +57,11 @@ class _NavigatePanelState extends State<NavigatePanel> {
   void _onItemTapped(int index) {
     setState(() {
       _selectedIndex = index;
+      switch(index){
+        case 0: _title = "Расписание"; break;
+        case 1: _title = "Главная"; break;
+        case 2: _title = "Студенты"; break;
+      }
     });
   }
 
@@ -70,7 +69,7 @@ class _NavigatePanelState extends State<NavigatePanel> {
   Widget build(BuildContext context) {
     return Scaffold(
       appBar: AppBar(
-        title: const Text('StudNotes'),
+        title: Text(_title),
         elevation: 0,
         actions: <Widget>[
           PopupMenuButton<String>(
