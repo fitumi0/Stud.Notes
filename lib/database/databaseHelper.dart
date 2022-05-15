@@ -6,7 +6,7 @@ import 'package:path/path.dart';
 import 'package:path_provider/path_provider.dart';
 import 'package:sqflite/sqflite.dart';
 import 'models/lesson.dart';
-import 'models/DropDownListModel.dart';
+import 'models/dropDownListModel.dart';
 
 class DatabaseHelper {
   static int currentTimeInSeconds() {
@@ -33,10 +33,12 @@ class DatabaseHelper {
     await db.execute('''CREATE TABLE IF NOT EXISTS lessons(
         id INTEGER PRIMARY KEY,
         name TEXT NOT NULL,
+        building INTEGER NOT NULL,
+        classroom INTEGER NOT NULL,
         groupp TEXT NOT NULL,
         course INTEGER NOT NULL,
         date INTEGER NOT NULL,
-        start INTEGER NOT NULL,
+        starttime INTEGER NOT NULL,
         type TEXT NOT NULL,
         state INTEGER NOT NULL)''');
 
@@ -50,22 +52,6 @@ class DatabaseHelper {
         rating INT)''');
 
     await db.execute('''CREATE TABLE IF NOT EXISTS lessons_list(
-          id INTEGER PRIMARY KEY,
-          name TEXT NOT NULL)''');
-
-    await db.execute('''CREATE TABLE IF NOT EXISTS groups_list(
-          id INTEGER PRIMARY KEY,
-          name TEXT NOT NULL)''');
-
-    await db.execute('''CREATE TABLE IF NOT EXISTS course_list(
-          id INTEGER PRIMARY KEY,
-          name TEXT NOT NULL)''');
-
-    await db.execute('''CREATE TABLE IF NOT EXISTS startTime_list(
-          id INTEGER PRIMARY KEY,
-          name TEXT NOT NULL)''');
-
-    await db.execute('''CREATE TABLE IF NOT EXISTS lessonTypes_list(
           id INTEGER PRIMARY KEY,
           name TEXT NOT NULL)''');
   }
@@ -100,45 +86,7 @@ class DatabaseHelper {
     return await db.delete('lessons_list', where: 'id = ?', whereArgs: [id]);
   }
   /// ===============================================================
-  
-  Future<List<DropDownListModel>> getGroupsDropDownList() async {
-    Database db = await instance.database;
-    var lessons = await db.query('groups_list', orderBy: 'name');
-    List<DropDownListModel> LessonList = lessons.isNotEmpty
-        ? lessons.map((c) => DropDownListModel.fromMap(c)).toList()
-        : [];
-    return LessonList;
-  }
 
-  Future<int> insertIntoGroupsDropDownList(DropDownListModel lesson) async {
-    Database db = await instance.database;
-    return await db.insert('groups_list', lesson.toMap());
-  }
-
-  Future<int> removeFromGroupsDropDownList(int id) async {
-    Database db = await instance.database;
-    return await db.delete('groups_list', where: 'id = ?', whereArgs: [id]);
-  }
-  /// ===============================================================
-
-  Future<List<Student>> getStudentsDropDownList() async {
-    Database db = await instance.database;
-    var student = await db.query('students', orderBy: 'secondname');
-    List<Student> StudentList = student.isNotEmpty
-        ? student.map((c) => Student.fromMap(c)).toList()
-        : [];
-    return StudentList;
-  }
-
-  Future<int> insertIntoStudentsDropDownList(Student student) async {
-    Database db = await instance.database;
-    return await db.insert('students', student.toMap());
-  }
-
-  Future<int> removeFromStudentsDropDownList(int id) async {
-    Database db = await instance.database;
-    return await db.delete('students', where: 'id = ?', whereArgs: [id]);
-  }
 
   /// END DROPDOWNS
   ///
@@ -173,10 +121,18 @@ class DatabaseHelper {
   ///
   /// STUDENTS
 
-  Future<List<Student>> getStudents(String group) async {
+  Future<List<Student>> getStudentsFromGroup(String group, int course) async {
     Database db = await instance.database;
-    var students = await db.rawQuery("SELECT * FROM students WHERE groupp=\'${group}\' ORDER BY secondname ASC");
-    print(students);
+    var students = await db.rawQuery("SELECT * FROM students WHERE groupp=\'${group}\' AND course=${course} ORDER BY secondname ASC");
+    List<Student> StudentList = students.isNotEmpty
+        ? students.map((c) => Student.fromMap(c)).toList()
+        : [];
+    return StudentList;
+  }
+
+  Future<List<Student>> getGroupsFromStudents() async {
+    Database db = await instance.database;
+    var students = await db.rawQuery("SELECT * FROM students group by groupp, course ORDER BY groupp ASC, course ASC");
     List<Student> StudentList = students.isNotEmpty
         ? students.map((c) => Student.fromMap(c)).toList()
         : [];

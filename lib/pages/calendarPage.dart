@@ -1,13 +1,13 @@
 
 import 'package:flutter/services.dart';
-import 'package:flutter_proj/database/models/DropDownListModel.dart';
-import 'package:flutter_proj/pages/workspaces/add_lesson_helper.dart';
+import 'package:flutter_proj/database/models/dropDownListModel.dart';
+import 'package:flutter_proj/pages/workspaces/addLessonHelper.dart';
 import 'package:flutter/material.dart';
 import 'package:flutter_speed_dial/flutter_speed_dial.dart';
 import 'package:intl/intl.dart';
 import 'package:syncfusion_flutter_calendar/calendar.dart';
 
-import '../database/database_helper.dart';
+import '../database/databaseHelper.dart';
 import '../database/models/lesson.dart';
 import '../database/models/student.dart';
 
