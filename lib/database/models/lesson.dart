@@ -1,15 +1,19 @@
 class Lesson {
   final int? id;
   final String name;
+  final int building;
+  final int classroom;
   final String groupp;
   final int course;
   final int date;
-  final String starttime;
+  final int starttime;
   final String type;
   final int state;
   Lesson({
     this.id,
     required this.name,
+    required this.building,
+    required this.classroom,
     required this.groupp,
     required this.course,
     required this.date,
@@ -21,6 +25,8 @@ class Lesson {
   factory Lesson.fromMap(Map<String, dynamic> json) => new Lesson(
     id: json['id'],
     name: json['name'],
+    building: json['building'],
+    classroom: json['classroom'],
     groupp: json["groupp"],
     course: json["course"],
     date: json["date"],
@@ -33,10 +39,12 @@ class Lesson {
     return {
       'id': id,
       'name': name,
+      'building': building,
+      'classroom': classroom,
       'groupp': groupp,
       'course': course,
       'date': date,
-      'start': starttime,
+      'starttime': starttime,
       'type': type,
       'state': state,
     };
