@@ -2,7 +2,6 @@ import 'package:flutter/material.dart';
 
 
 DateTime selectedDate = DateTime.now();
-int _ddDate = selectedDate.millisecondsSinceEpoch;
 
 class DatePicker extends StatefulWidget {
   const DatePicker();
@@ -14,17 +13,24 @@ class DatePicker extends StatefulWidget {
 class _DatePickerState extends State<DatePicker> {
   @override
   Widget build(BuildContext context) {
-    return Scaffold(
-      body: Center(
+    return SafeArea(
+      child: Center(
         child: Row(
           mainAxisAlignment: MainAxisAlignment.spaceEvenly,
           children: <Widget>[
             Text("${selectedDate.day}/${selectedDate.month}/${selectedDate.year}"),
             ElevatedButton(
+              style: ButtonStyle(
+                  shape: MaterialStateProperty.all<RoundedRectangleBorder>(
+                      RoundedRectangleBorder(
+                          borderRadius: BorderRadius.circular(18.0),
+                      )
+                  )
+              ),
               onPressed: () {
                 _selectDate(context);
               },
-              child: const Text("Выберите дату"),
+              child: Icon(Icons.edit),
             ),
           ],
         ),
@@ -37,13 +43,12 @@ class _DatePickerState extends State<DatePicker> {
         context: context,
         initialDate: selectedDate,
         helpText: "Выберите дату занятия",
-        firstDate: DateTime(2010),
-        lastDate: DateTime(2025),
+        firstDate: DateTime.now(),
+        lastDate: DateTime(2050),
         initialEntryMode: DatePickerEntryMode.calendarOnly);
     if (selected != null && selected != selectedDate) {
       setState(() {
         selectedDate = selected;
-        _ddDate = selectedDate.millisecondsSinceEpoch;
       });
     }
   }
