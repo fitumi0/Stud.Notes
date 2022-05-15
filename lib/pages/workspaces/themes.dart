@@ -16,7 +16,7 @@ ThemeData mainTheme = ThemeData(
             color: Colors.black),
         subtitle2: TextStyle(
             fontFamily: "Montserrat-Medium",
-            fontSize: 15,
+            fontSize: 16,
             fontWeight: FontWeight.w500,
             color: Colors.black54))
 );
@@ -24,29 +24,6 @@ ThemeData mainTheme = ThemeData(
 ThemeData pinkTheme = mainTheme.copyWith(
     brightness: Brightness.dark,
     primaryColor: const Color(0xFFF49FB6),
-    iconTheme: IconThemeData(color: Colors.black),
-    textTheme: const TextTheme(
-        subtitle1: TextStyle(
-            fontFamily: "Montserrat-SemiBold",
-            fontSize: 20,
-            fontWeight: FontWeight.w600,
-            color: Colors.black),
-        subtitle2: TextStyle(
-            fontFamily: "Montserrat-Medium",
-            fontSize: 15,
-            fontWeight: FontWeight.w500,
-            color: Colors.black54))
-    // primaryColor: const Color(0xFFF49FB6),
-    // scaffoldBackgroundColor: const Color(0xFFFAF8F0),
-    // floatingActionButtonTheme: const FloatingActionButtonThemeData(
-    //   foregroundColor: Color(0xFF24737c),
-    //   backgroundColor: Color(0xFFA6E0DE),
-    // ),
-    // textTheme: const TextTheme(
-    //   bodyText1: TextStyle(
-    //     color: Colors.black87,
-    //   ),
-    // )
 );
 
 ThemeData halloweenTheme = mainTheme.copyWith(
