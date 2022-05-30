@@ -14,8 +14,9 @@ environment:
 dependencies:
   sqflite:
   path:
-  table_calendar:
   flutter:
+    sdk: flutter
+  flutter_localizations:
     sdk: flutter
   provider:
   shared_preferences:
@@ -42,6 +43,7 @@ dev_dependencies:
 
 
 flutter:
+  generate: true
   fonts:
     - family: Montserrat-Italic
       fonts:
@@ -51,9 +53,17 @@ flutter:
       fonts:
         - asset: fonts/Montserrat-Medium.ttf
           style: normal
+    - family: Montserrat-Light
+      fonts:
+        - asset: fonts/Montserrat-Light.ttf
+          style: normal
     - family: Montserrat-SemiBold
       fonts:
         - asset: fonts/Montserrat-SemiBold.ttf
+          style: normal
+    - family: Montserrat-Regular
+      fonts:
+        - asset: fonts/Montserrat-Regular.ttf
           style: normal
     - family: Montserrat-Bold
       fonts:

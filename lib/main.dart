@@ -1,16 +1,16 @@
 // @dart=2.9
-import 'package:animated_theme_switcher/animated_theme_switcher.dart';
 import 'package:flutter/material.dart';
-import 'package:flutter_proj/pages/lessonspage.dart';
-import 'package:flutter_proj/pages/calendarpage.dart';
-import 'package:flutter_proj/pages/homepage.dart';
+import 'package:flutter_localizations/flutter_localizations.dart';
+import 'package:flutter_proj/pages/lessonsPage.dart';
+import 'package:flutter_proj/pages/calendarPage.dart';
+import 'package:flutter_proj/pages/homePage.dart';
 import 'package:flutter_proj/pages/workspaces/settings.dart';
 import 'package:flutter_proj/pages/workspaces/themes.dart';
 import 'package:intl/date_symbol_data_local.dart';
 
 void main() {
   WidgetsFlutterBinding.ensureInitialized();
-  initializeDateFormatting().then((_) => runApp(MyApp()));
+  initializeDateFormatting().then((_) => runApp(const MyApp()));
 }
 
 String _title = "Главная";
@@ -19,22 +19,21 @@ class MyApp extends StatelessWidget {
 
   const MyApp({key}) : super(key: key);
 
-
   @override
   Widget build(BuildContext context) {
-    // final isPlatformDark = WidgetsBinding.instance.window.platformBrightness == Brightness.light;
-    // final initTheme = isPlatformDark ? pinkTheme : mainTheme;
-    final initTheme = mainTheme;
-    return ThemeProvider(
-        initTheme: initTheme,
-      builder: (_, myTheme){
       return MaterialApp(
-      title: _title,
-      theme: myTheme,
+
+        //TODO: FIX
+        // localizationsDelegates: GlobalMaterialLocalizations.delegates,
+        // supportedLocales: [
+        //   const Locale('ru', 'RU'),
+        //   const Locale('en', 'US'),
+        //   const Locale('en', 'GB'),
+        // ],
+      title: "StudNotes",
+      theme: mainTheme,
       home: const NavigatePanel(),
       );
-        }
-    );
   }
 }
 
@@ -48,7 +47,7 @@ class NavigatePanel extends StatefulWidget {
 class _NavigatePanelState extends State<NavigatePanel> {
   int _selectedIndex = 1;
 
-  static const List<Widget> _pages = <Widget>[
+  final List<Widget> _pages = <Widget>[
     CalendarPage(),
     HomePage(),
     LessonsPage(),
@@ -69,13 +68,14 @@ class _NavigatePanelState extends State<NavigatePanel> {
   Widget build(BuildContext context) {
     return Scaffold(
       appBar: AppBar(
+        centerTitle: false,
         title: Text(_title),
         elevation: 0,
         actions: <Widget>[
           PopupMenuButton<String>(
-            onSelected: (value) => handleClick(context, value),
+            onSelected: (value) => handleClickMain(context, value),
             itemBuilder: (BuildContext context) {
-              return {'Settings'}.map((String choice) {
+              return {'Настройки'}.map((String choice) {
                 return PopupMenuItem<String>(
                   value: choice,
                   child: Text(choice),
@@ -111,9 +111,9 @@ class _NavigatePanelState extends State<NavigatePanel> {
   }
 }
 
-void handleClick(BuildContext context, String value) {
+void handleClickMain(BuildContext context, String value) {
   switch (value) {
-    case 'Settings':
+    case 'Настройки':
       Navigator.of(context).push<void>(
         MaterialPageRoute<void>(
           builder: (BuildContext context) {

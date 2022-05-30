@@ -1,8 +1,10 @@
 import 'package:flutter/material.dart';
 
+import '../calendarPage.dart';
 
-DateTime selectedDate = DateTime.now();
 
+DateTime workDay = DateTime.now().hour > 19 ? DateTime.fromMillisecondsSinceEpoch(DateTime.now().millisecondsSinceEpoch + hour * 5) : DateTime.now();
+DateTime selectedDate = workDay.millisecondsSinceEpoch < DateTime.now().millisecondsSinceEpoch ? DateTime.now() : workDay;
 class DatePicker extends StatefulWidget {
   const DatePicker();
 
@@ -11,39 +13,35 @@ class DatePicker extends StatefulWidget {
 }
 
 class _DatePickerState extends State<DatePicker> {
+
   @override
   Widget build(BuildContext context) {
     return SafeArea(
       child: Center(
-        child: Row(
-          mainAxisAlignment: MainAxisAlignment.spaceEvenly,
+        child: ElevatedButton(
+          onPressed: () {
+            _selectDate(context);
+          },
+          child: Row(
+          mainAxisAlignment: MainAxisAlignment.spaceBetween,
           children: <Widget>[
             Text("${selectedDate.day}/${selectedDate.month}/${selectedDate.year}"),
-            ElevatedButton(
-              style: ButtonStyle(
-                  shape: MaterialStateProperty.all<RoundedRectangleBorder>(
-                      RoundedRectangleBorder(
-                          borderRadius: BorderRadius.circular(18.0),
-                      )
-                  )
-              ),
-              onPressed: () {
-                _selectDate(context);
-              },
-              child: Icon(Icons.edit),
-            ),
+            Icon(Icons.edit),
           ],
+        ),
         ),
       ),
     );
   }
 
   _selectDate(BuildContext context) async {
+
     final DateTime? selected = await showDatePicker(
         context: context,
-        initialDate: selectedDate,
+        // TODO: FIX => locale: await initializeDateFormatting('ru_RU'),
+        initialDate: workDay.millisecondsSinceEpoch < selectedDate.millisecondsSinceEpoch ? selectedDate : workDay,
         helpText: "Выберите дату занятия",
-        firstDate: DateTime.now(),
+        firstDate: workDay,
         lastDate: DateTime(2050),
         initialEntryMode: DatePickerEntryMode.calendarOnly);
     if (selected != null && selected != selectedDate) {

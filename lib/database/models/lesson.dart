@@ -9,6 +9,7 @@ class Lesson {
   final int starttime;
   final String type;
   final int state;
+  final String? recurrenceRule;
   Lesson({
     this.id,
     required this.name,
@@ -19,10 +20,11 @@ class Lesson {
     required this.date,
     required this.starttime,
     required this.type,
-    required this.state
+    required this.state,
+    this.recurrenceRule,
   });
 
-  factory Lesson.fromMap(Map<String, dynamic> json) => new Lesson(
+  factory Lesson.fromMap(Map<String, dynamic> json) => Lesson(
     id: json['id'],
     name: json['name'],
     building: json['building'],
@@ -33,6 +35,7 @@ class Lesson {
     starttime: json["starttime"],
     type: json["type"],
     state: json["state"],
+    recurrenceRule: json["recurrenceRule"],
   );
 
   Map<String, dynamic> toMap() {
@@ -47,6 +50,7 @@ class Lesson {
       'starttime': starttime,
       'type': type,
       'state': state,
+      'recurrenceRule': recurrenceRule
     };
   }
 }

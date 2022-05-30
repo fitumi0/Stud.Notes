@@ -1,24 +1,17 @@
-
+import 'package:flutter/cupertino.dart';
 import 'package:flutter/services.dart';
 import 'package:flutter_proj/database/models/dropDownListModel.dart';
 import 'package:flutter_proj/pages/workspaces/addLessonHelper.dart';
 import 'package:flutter/material.dart';
+import 'package:flutter_proj/pages/workspaces/themes.dart';
 import 'package:flutter_speed_dial/flutter_speed_dial.dart';
 import 'package:intl/intl.dart';
 import 'package:syncfusion_flutter_calendar/calendar.dart';
 
 import '../database/databaseHelper.dart';
+import '../database/models/groupp.dart';
 import '../database/models/lesson.dart';
-import '../database/models/student.dart';
 
-///
-/// CALENDAR FEATURES:
-/// 4) КАСТОМ РАСПИСАНИЯ:
-///    - ДВЕ НЕДЕЛИ, НА КАЖДЫЙ ДЕНЬ МОЖНО ЗАБИНДИТЬ БАРЫ
-///    - ЭТИ ПАРЫ ДУБЛИРУЮТСЯ НА ВЕСЬ СЕМЕСТР
-///    - НАЧАЛО НОВОГО СЕМЕСТРА => НАСТРОЙКА
-/// TODO: ADD FEATURES
-///
 
 String _ddLessonName = "";
 String _ddGroupp = "";
@@ -49,31 +42,35 @@ String? selectedTime = "10:00";
 
 List<String> type = [
   "Лекция",
-  "Практика",
-  "Лабораторная",
+  "Практическое занятие",
+  "Лабораторная работа",
   "Зачёт",
 ];
 String? selectedType = 'Лекция';
+late bool alreadyInDatabase;
 
 late String? selectedGroup;
 List<String> groups = [" "];
 String? selectedLesson = " ";
 List<String> lessonsFromDB = [" "];
-List<String> courses = ["1", "2", "3", "4"];
-String? selectedCourse = '1';
+List<String> courses = [" "];
+String? selectedCourse = ' ';
 
-class CalendarPage extends StatefulWidget{
+class CalendarPage extends StatefulWidget {
   const CalendarPage({Key? key}) : super(key: key);
+
 
   @override
   _CalendarPageState createState() => _CalendarPageState();
 }
 
-class _CalendarPageState extends State<CalendarPage>{
+class _CalendarPageState extends State<CalendarPage> {
   final TextEditingController _controllerLesson = TextEditingController();
   final TextEditingController _crController = TextEditingController();
   final TextEditingController _bdController = TextEditingController();
   final _addLessonKey = GlobalKey<FormState>();
+
+
   @override
   void initState() {
     super.initState();
@@ -82,7 +79,7 @@ class _CalendarPageState extends State<CalendarPage>{
       _crController.value = _crController.value.copyWith(
         text: text,
         selection:
-        TextSelection(baseOffset: text.length, extentOffset: text.length),
+            TextSelection(baseOffset: text.length, extentOffset: text.length),
         composing: TextRange.empty,
       );
     });
@@ -91,7 +88,7 @@ class _CalendarPageState extends State<CalendarPage>{
       _bdController.value = _bdController.value.copyWith(
         text: text,
         selection:
-        TextSelection(baseOffset: text.length, extentOffset: text.length),
+            TextSelection(baseOffset: text.length, extentOffset: text.length),
         composing: TextRange.empty,
       );
     });
@@ -105,10 +102,6 @@ class _CalendarPageState extends State<CalendarPage>{
   }
 
   int? selectedID;
-  String? _subjectText = '',
-      _startTimeText = '',
-      _dateText = '',
-      _timeDetails = '';
 
   @override
   Widget build(BuildContext context) {
@@ -122,16 +115,15 @@ class _CalendarPageState extends State<CalendarPage>{
               child: CircularProgressIndicator(),
             );
           }
-            double height = MediaQuery.of(context).size.height;
-            return snapshot.data!.isEmpty
-                ? Center(child: calendarItem(collection))
-                : ListView.builder(
-                itemCount: 1,
-                itemExtent: height / 1.165,
-                itemBuilder: (context, int pos) {
-                  for (var item in snapshot.data!) {
-                    collection.add(
-                      Lesson(
+          double height = MediaQuery.of(context).size.height;
+          return snapshot.data!.isEmpty
+              ? Center(child: calendarItem(collection))
+              : ListView.builder(
+                  itemCount: 1,
+                  itemExtent: height / 1.165,
+                  itemBuilder: (context, int pos) {
+                    for (var item in snapshot.data!) {
+                      collection.add(Lesson(
                         name: item.name,
                         building: item.building,
                         classroom: item.classroom,
@@ -141,242 +133,252 @@ class _CalendarPageState extends State<CalendarPage>{
                         starttime: item.starttime,
                         type: item.type,
                         state: item.state,
-                      )
-                    );
-                }
-                return calendarItem(collection);
-                }
-            );
-    },
-
-    ),
+                        recurrenceRule: item.recurrenceRule,
+                      ));
+                    }
+                    return calendarItem(collection);
+                  });
+        },
+      ),
       floatingActionButton: SpeedDial(
+        tooltip: "Меню",
         animatedIcon: AnimatedIcons.menu_close,
+        // animatedIconTheme: IconThemeData(
+        //   color: Color(black)
+        // ),
         animationDuration: Duration(milliseconds: 400),
         overlayOpacity: 0.24,
         overlayColor: Colors.black,
         spacing: 10,
-        onOpen: () {
-          _getGroupsFromDatabase();
-          _getLessonsListFromDatabase();
-        },
+        // onOpen: (){},
         children: [
           SpeedDialChild(
-            child: Icon(Icons.settings),
-            label: "Настройки",
-            onTap: (){
-              selectedID = null;
-              showDialog(
-                  context: context,
-                  builder: (BuildContext context) {
-                    return AlertDialog(
-                      content: StatefulBuilder(
-                          builder: (BuildContext context, StateSetter setState) {
-                            double height = MediaQuery.of(context).size.height;
-                            return Stack(
-
-                              children: <Widget>[
-                                Form(
-                                  child: Column(
-                                    mainAxisSize: MainAxisSize.min,
-                                    children: <Widget>[
-                                      const Padding(
-                                        padding: EdgeInsets.all(8.0),
-                                        child: Text("Список предметов"),
-                                      ),
-                                      Padding(
-                                        padding: const EdgeInsets.all(8.0),
-                                        child: SizedBox(
-                                          height: height / 3,
-                                          width: 300.0,
-                                          child: FutureBuilder<
-                                              List<DropDownListModel>>(
-                                              future: DatabaseHelper.instance
-                                                  .getLessonsDropDownList(),
-                                              builder: (BuildContext context,
-                                                  snapshot) {
-                                                if (!snapshot.hasData) {
-                                                  return const Center(
-                                                      child: Text(
-                                                          'Loading...'));
-                                                }
-                                                return snapshot.data!.isEmpty
-                                                    ? Center(
-                                                    child: Text('Пусто'))
-                                                    : ListView(
-                                                  shrinkWrap: true,
-                                                  children: snapshot.data!
-                                                      .map((lesson) {
-                                                    return Center(
-                                                      child: Card(
-                                                        color: selectedID ==
-                                                            lesson.id
-                                                            ? Colors.red
-                                                            : Colors.white,
-                                                        child: ListTile(
-                                                          title: Text(
-                                                              lesson.name),
-                                                          onTap: () {
-                                                            setState(() {
-                                                              selectedID =
-                                                                  lesson.id;
-                                                            });
-                                                          },
-                                                        ),
-                                                      ),
+              backgroundColor: Color(wheatColor),
+              child: Icon(Icons.settings),
+              label: "Настройки",
+              labelBackgroundColor: Color(wheatColor),
+              onTap: () {
+                selectedID = null;
+                showDialog(
+                    context: context,
+                    builder: (BuildContext context) {
+                      return AlertDialog(
+                        content: StatefulBuilder(builder:
+                            (BuildContext context, StateSetter setState) {
+                          double height = MediaQuery.of(context).size.height;
+                          return Stack(
+                            children: <Widget>[
+                              Form(
+                                child: Column(
+                                  mainAxisSize: MainAxisSize.min,
+                                  children: <Widget>[
+                                    const Padding(
+                                      padding: EdgeInsets.all(8.0),
+                                      child: Text("Список предметов"),
+                                    ),
+                                    Padding(
+                                      padding: const EdgeInsets.all(8.0),
+                                      child: SizedBox(
+                                        height: height / 3,
+                                        width: 300.0,
+                                        child: FutureBuilder<
+                                                List<DropDownListModel>>(
+                                            future: DatabaseHelper.instance
+                                                .getLessonsDropDownList(),
+                                            builder: (BuildContext context,
+                                                snapshot) {
+                                              if (!snapshot.hasData) {
+                                                return const Center(
+                                                    child: Text('Loading...'));
+                                              }
+                                              return snapshot.data!.isEmpty
+                                                  ? Center(child: Text('Пусто'))
+                                                  : ListView(
+                                                      shrinkWrap: true,
+                                                      children: snapshot.data!
+                                                          .map((lesson) {
+                                                        return Center(
+                                                          child: Card(
+                                                            color: selectedID ==
+                                                                    lesson.id
+                                                                ? Colors.red
+                                                                : Colors.white,
+                                                            child: ListTile(
+                                                              title: Text(
+                                                                  lesson.name),
+                                                              onTap: () {
+                                                                setState(() {
+                                                                  selectedID =
+                                                                      lesson.id;
+                                                                });
+                                                              },
+                                                            ),
+                                                          ),
+                                                        );
+                                                      }).toList(),
                                                     );
-                                                  }).toList(),
-                                                );
-                                              }),
-                                        ),
+                                            }),
                                       ),
-                                      Padding(
-                                        padding: const EdgeInsets.all(8.0),
-                                        child: Column(
-                                          children: [
-                                            TextField(
-                                              controller: _controllerLesson,
-                                              decoration: InputDecoration(
-                                                  errorStyle:
-                                                  const TextStyle(
-                                                      color: Colors.redAccent,
-                                                      fontSize: 16.0),
-                                                  hintText: 'Название дисциплины',
-
-                                                  border: OutlineInputBorder(
-                                                      borderRadius: BorderRadius
-                                                          .circular(16.0))),
-                                              onSubmitted: (value) {
-                                                _addDiscipline();
-                                                setState(() {
-                                                  _controllerLesson
-                                                      .text = "";
-                                                });
-                                              },
-                                            ),
-                                            Row(
-                                              children: [
-                                                TextButton(
-                                                  autofocus: true,
-                                                  style: TextButton.styleFrom(
-                                                    minimumSize: const Size(
-                                                        100, 50),
-                                                  ),
-                                                  child: Text("Добавить"),
-                                                  onPressed: () {
-                                                    _addDiscipline();
-                                                    setState(() {
-                                                      _controllerLesson
-                                                          .text = "";
-                                                    });
-                                                  },
-
+                                    ),
+                                    Padding(
+                                      padding: const EdgeInsets.all(8.0),
+                                      child: Column(
+                                        children: [
+                                          TextField(
+                                            controller: _controllerLesson,
+                                            decoration: InputDecoration(
+                                                errorStyle: const TextStyle(
+                                                    color: Colors.redAccent,
+                                                    fontSize: 16.0),
+                                                hintText: 'Название дисциплины',
+                                                border: OutlineInputBorder(
+                                                    borderRadius:
+                                                        BorderRadius.circular(
+                                                            16.0))),
+                                            onSubmitted: (value) {
+                                              _addDiscipline();
+                                              setState(() {
+                                                _controllerLesson.text = "";
+                                              });
+                                            },
+                                          ),
+                                          Row(
+                                            children: [
+                                              TextButton(
+                                                autofocus: true,
+                                                style: TextButton.styleFrom(
+                                                  minimumSize:
+                                                      const Size(100, 50),
                                                 ),
-                                                TextButton(
-                                                  style: TextButton.styleFrom(
-                                                    minimumSize: const Size(
-                                                        100, 50),
-                                                  ),
-                                                  child: Text("Удалить"),
-                                                  onPressed: () {
-                                                    setState(() {
-                                                      DatabaseHelper.instance.removeFromLessonsDropDownList(selectedID!);
-                                                      selectedID = null;
-                                                    });
-                                                  },
+                                                child: Text("Добавить"),
+                                                onPressed: () {
+                                                  _addDiscipline();
+                                                  setState(() {
+                                                    _controllerLesson.text = "";
+                                                  });
+                                                },
+                                              ),
+                                              TextButton(
+                                                style: TextButton.styleFrom(
+                                                  minimumSize:
+                                                      const Size(100, 50),
                                                 ),
-
-                                                TextButton(
-                                                  style: TextButton.styleFrom(
-                                                    minimumSize: const Size(
-                                                        100, 50),
-                                                  ),
-                                                  child: Text("Применить"),
-                                                  onPressed: () {
-                                                    setState(() {
-                                                      Navigator.of(context).pop();
-                                                    });
-                                                  },
+                                                child: Text("Удалить"),
+                                                onPressed: () {
+                                                  setState(() {
+                                                    DatabaseHelper.instance
+                                                        .removeFromLessonsDropDownList(
+                                                            selectedID!);
+                                                    selectedID = null;
+                                                  });
+                                                },
+                                              ),
+                                              TextButton(
+                                                style: TextButton.styleFrom(
+                                                  minimumSize:
+                                                      const Size(100, 50),
                                                 ),
-                                              ],
-                                            ),
-                                          ],
-                                        ),
+                                                child: Text("Применить"),
+                                                onPressed: () {
+                                                  setState(() {
+                                                    Navigator.of(context).pop();
+                                                  });
+                                                },
+                                              ),
+                                            ],
+                                          ),
+                                        ],
                                       ),
-                                    ],
-                                  ),
+                                    ),
+                                  ],
                                 ),
-                              ],
-                            );
-                          }),
-                    );
-                  });
-
-            }
-          ),
+                              ),
+                            ],
+                          );
+                        }),
+                      );
+                    });
+              }),
           SpeedDialChild(
-            child: Icon(Icons.add),
-            label: "Добавить",
-            onTap: () {
-              setState(() {
-              addLessonShowDialog();
-            });
-            }
-          ),
+              backgroundColor: Color(wheatColor),
+              child: Icon(Icons.add),
+              label: "Добавить",
+              labelBackgroundColor: Color(wheatColor),
+              onTap: () {
+                setState(() {
+                  addLessonShowDialog();
+                });
+              }),
         ],
       ),
     );
-
   }
-
 
   void getDropDownValues() {
     setState(() {
-      switch(selectedTime!){
-        case("8:20"):{
-          _ddStartTime = DateTime(selectedDate.year, selectedDate.month, selectedDate.day, 8, 20, 0).millisecondsSinceEpoch;
-          break;
-        }
-        case("10:00"):{
-          _ddStartTime = DateTime(selectedDate.year, selectedDate.month, selectedDate.day, 10, 00, 0).millisecondsSinceEpoch;
-          break;
-        }
-        case("11:45"):{
-          _ddStartTime = DateTime(selectedDate.year, selectedDate.month, selectedDate.day, 11, 45, 0).millisecondsSinceEpoch;
-          break;
-        }
-        case("14:00"):{
-          _ddStartTime = DateTime(selectedDate.year, selectedDate.month, selectedDate.day, 14, 0, 0).millisecondsSinceEpoch;
-          break;
-        }
-        case("15:45"):{
-          _ddStartTime = DateTime(selectedDate.year, selectedDate.month, selectedDate.day, 15, 45, 0).millisecondsSinceEpoch;
-          break;
-        }
-        case("17:20"):{
-          _ddStartTime = DateTime(selectedDate.year, selectedDate.month, selectedDate.day, 17, 20, 0).millisecondsSinceEpoch;
-          break;
-        }
-        case("18:55"):{
-          _ddStartTime = DateTime(selectedDate.year, selectedDate.month, selectedDate.day, 18, 55, 0).millisecondsSinceEpoch;
-          break;
-        }
+      switch (selectedTime!) {
+        case ("8:20"):
+          {
+            _ddStartTime = DateTime(selectedDate.year, selectedDate.month,
+                    selectedDate.day, 8, 20, 0)
+                .millisecondsSinceEpoch;
+            break;
+          }
+        case ("10:00"):
+          {
+            _ddStartTime = DateTime(selectedDate.year, selectedDate.month,
+                    selectedDate.day, 10, 00, 0)
+                .millisecondsSinceEpoch;
+            break;
+          }
+        case ("11:45"):
+          {
+            _ddStartTime = DateTime(selectedDate.year, selectedDate.month,
+                    selectedDate.day, 11, 45, 0)
+                .millisecondsSinceEpoch;
+            break;
+          }
+        case ("14:00"):
+          {
+            _ddStartTime = DateTime(selectedDate.year, selectedDate.month,
+                    selectedDate.day, 14, 0, 0)
+                .millisecondsSinceEpoch;
+            break;
+          }
+        case ("15:45"):
+          {
+            _ddStartTime = DateTime(selectedDate.year, selectedDate.month,
+                    selectedDate.day, 15, 45, 0)
+                .millisecondsSinceEpoch;
+            break;
+          }
+        case ("17:20"):
+          {
+            _ddStartTime = DateTime(selectedDate.year, selectedDate.month,
+                    selectedDate.day, 17, 20, 0)
+                .millisecondsSinceEpoch;
+            break;
+          }
+        case ("18:55"):
+          {
+            _ddStartTime = DateTime(selectedDate.year, selectedDate.month,
+                    selectedDate.day, 18, 55, 0)
+                .millisecondsSinceEpoch;
+            break;
+          }
       }
-      if(selectedLesson != null && selectedLesson != " "){
+      if (selectedLesson != null && selectedLesson != " ") {
         _ddLessonName = selectedLesson!;
-      }
-      else{
+      } else {
         _ddLessonName = "";
       }
-      if (selectedGroup != null && selectedGroup != " "){
+      if (selectedGroup != null && selectedGroup != " ") {
         _ddGroupp = selectedGroup!;
-      }
-      else{
+      } else {
         _ddGroupp = "";
       }
       _ddCourse = int.parse(selectedCourse!);
       _ddType = selectedType!;
-
 
     });
   }
@@ -392,351 +394,332 @@ class _CalendarPageState extends State<CalendarPage>{
     });
   }
 
-  void addLessonShowDialog() {
+  void addLessonShowDialog() async {
     double width = MediaQuery.of(context).size.width;
     selectedGroup = groups[0];
+    await _getGroupsFromDatabase();
+    await _getLessonsListFromDatabase();
     showDialog(
         context: context,
         builder: (BuildContext context) {
           return AlertDialog(
             content: Stack(
-
-              clipBehavior: Clip.none, children: <Widget>[
-              Positioned(
-                right: -40.0,
-                top: -40.0,
-                child: InkResponse(
-                  onTap: () {
-                    Navigator.of(context).pop();
-                    resetDropDownValues();
-                  },
-                  child: CircleAvatar(
-                    child: Icon(Icons.close),
+              clipBehavior: Clip.none,
+              children: <Widget>[
+                _xMark(),
+                Form(
+                  key: _addLessonKey,
+                  child: SingleChildScrollView(
+                    child: Column(
+                      mainAxisSize: MainAxisSize.min,
+                      children: <Widget>[
+                        Padding(
+                          padding: EdgeInsets.all(0),
+                          child: Text("Новое занятие"),
+                        ),
+                        _title("Название занятия"),
+                        _buildDropDown(lessonsFromDB, selectedLesson),
+                        _title("Группа"),
+                        _buildDropDown(groups, selectedGroup),
+                        _title("Курс"),
+                        _buildDropDown(courses, selectedCourse),
+                        _title("Время начала"),
+                        _buildDropDown(time, selectedTime),
+                        _title("Тип"),
+                        _buildDropDown(type, selectedType),
+                        Padding(
+                          padding: EdgeInsets.all(0),
+                          child: TextFormField(
+                            validator: (value) {
+                              if (value == null || value.isEmpty) {
+                                return "Поле обязательно к заполнению";
+                              }
+                              return null;
+                            },
+                            controller: _bdController,
+                            maxLength: 3,
+                            decoration: InputDecoration(labelText: "Корпус"),
+                            keyboardType: TextInputType.number,
+                            inputFormatters: <TextInputFormatter>[
+                              FilteringTextInputFormatter.digitsOnly
+                            ], // Only numbers can be entered
+                          ),
+                        ),
+                        Padding(
+                          padding: EdgeInsets.all(0),
+                          child: TextFormField(
+                            validator: (value) {
+                              if (value == null || value.isEmpty) {
+                                return "Поле обязательно к заполнению";
+                              }
+                              return null;
+                            },
+                            controller: _crController,
+                            maxLength: 5,
+                            decoration: InputDecoration(labelText: "Аудитория"),
+                            keyboardType: TextInputType.number,
+                            inputFormatters: <TextInputFormatter>[
+                              FilteringTextInputFormatter.digitsOnly
+                            ], // Only numbers can be entered
+                          ),
+                        ),
+                        datePicker(),
+                        Padding(
+                          padding: const EdgeInsets.all(0),
+                          child: TextButton(
+                            style: TextButton.styleFrom(
+                              minimumSize: Size(width, 50),
+                            ),
+                            child: Text("Добавить"),
+                            onPressed: () async {
+                              getDropDownValues();
+                              if (_addLessonKey.currentState!.validate() &&
+                                  _checkValues()) {
+                                Lesson lesson = Lesson(
+                                  name: _ddLessonName,
+                                  building: int.parse(_bdController.text),
+                                  classroom: int.parse(_crController.text),
+                                  groupp: _ddGroupp,
+                                  course: _ddCourse,
+                                  date: selectedDate.millisecondsSinceEpoch,
+                                  starttime: _ddStartTime,
+                                  type: _ddType,
+                                  state: 0,
+                                  recurrenceRule: 'FREQ=WEEKLY;INTERVAL=1',
+                                );
+                                if (!await DatabaseHelper.instance
+                                    .isLessonTimeInDataBase(lesson)) {
+                                  DatabaseHelper.instance.insertLesson(lesson);
+                                  resetDropDownValues();
+                                  ScaffoldMessenger.of(context)
+                                      .showSnackBar(const SnackBar(
+                                    content: Text('Добавлено'),
+                                    backgroundColor: Colors.blueGrey,
+                                    behavior: SnackBarBehavior.floating,
+                                    duration: Duration(milliseconds: 1200),
+                                    margin: EdgeInsets.symmetric(
+                                        vertical: 30.0, horizontal: 150.0),
+                                    elevation: 30,
+                                  ));
+                                } else {
+                                  ScaffoldMessenger.of(context)
+                                      .showSnackBar(const SnackBar(
+                                    content: Text('Выберите другое время'),
+                                    backgroundColor: Colors.blueGrey,
+                                    behavior: SnackBarBehavior.floating,
+                                    duration: Duration(milliseconds: 1200),
+                                    margin: EdgeInsets.symmetric(
+                                        vertical: 30.0, horizontal: 150.0),
+                                    elevation: 30,
+                                  ));
+                                }
+                              }
+                              setState(() {});
+                            },
+                          ),
+                        )
+                      ],
+                    ),
                   ),
                 ),
-              ),
-              Form(
-                key: _addLessonKey,
-                child: SingleChildScrollView(
-                child: Column(
-                  mainAxisSize: MainAxisSize.min,
-                  children: <Widget>[
-                  Padding(
-                    padding: EdgeInsets.all(5.2),
-                    child: Text("Новое занятие"),
-                  ),
-
-
-                  Padding(
-                    padding: EdgeInsets.all(5.2),
-                    child: DropdownButtonFormField<String>(
-                      decoration: InputDecoration(
-                          border: OutlineInputBorder(
-                              borderRadius: BorderRadius.circular(16.0))),
-                      value: selectedLesson,
-                      items: lessonsFromDB
-                          .map((item) => DropdownMenuItem<String>(
-                        value: item,
-                        child: Text(item),
-                      ))
-                          .toList(),
-                      onChanged: (selectedLesson != null || selectedLesson!.trim() != "") ? (item) => setState(() => selectedLesson = item) : null,
-                    ),
-
-                  ),
-
-                  Padding(
-                    padding: EdgeInsets.all(5.2),
-                    child: DropdownButtonFormField<String>(
-                      decoration: InputDecoration(
-                          border: OutlineInputBorder(
-                              borderRadius: BorderRadius.circular(16.0))
-                      ),
-                      value: selectedGroup,
-                      items: groups
-                          .map((item) => DropdownMenuItem<String>(
-                        value: item,
-                        child: Text(item),
-                      ))
-                          .toList(),
-                      onChanged: selectedGroup != null ? (item) => setState(() => selectedGroup = item) : null,
-                    ),
-
-                  ),
-                  Padding(
-                    padding: EdgeInsets.all(5.2),
-                    child: DropdownButtonFormField<String>(
-                      decoration: InputDecoration(
-                          errorStyle:
-                          const TextStyle(color: Colors.redAccent, fontSize: 16.0),
-                          border: OutlineInputBorder(
-                              borderRadius: BorderRadius.circular(16.0))),
-                      value: selectedCourse,
-                      items: courses
-                          .map((item) => DropdownMenuItem<String>(
-                        value: item,
-                        child: Text(item),
-                      ))
-                          .toList(),
-                      onChanged: (item) => setState(() {
-                        selectedCourse = item;
-                      }),
-                    ),
-
-                  ),
-                  Padding(
-                    padding: EdgeInsets.all(5.2),
-                    child: DropdownButtonFormField<String>(
-                      decoration: InputDecoration(
-                          errorStyle:
-                          const TextStyle(color: Colors.redAccent, fontSize: 16.0),
-                          border: OutlineInputBorder(
-                              borderRadius: BorderRadius.circular(16.0))),
-                      value: selectedTime,
-                      items: time
-                          .map((item) => DropdownMenuItem<String>(
-                        value: item,
-                        child: Text(item),
-                      ))
-                          .toList(),
-                      onChanged: (item) => setState(() {
-                        selectedTime = item;
-                      }),
-                    ),
-
-                  ),
-                  Padding(
-                    padding: EdgeInsets.all(5.2),
-                    child: DropdownButtonFormField<String>(
-                      decoration: InputDecoration(
-                          errorStyle:
-                          const TextStyle(color: Colors.redAccent, fontSize: 16.0),
-                          border: OutlineInputBorder(
-                              borderRadius: BorderRadius.circular(16.0))),
-                      value: selectedType,
-                      items: type
-                          .map((item) => DropdownMenuItem<String>(
-                        value: item,
-                        child: Text(item),
-                      ))
-                          .toList(),
-                      onChanged: (item) => setState(() {
-                        selectedType = item;
-                      }),
-                    ),
-
-                  ),
-                  Padding(
-                    padding: EdgeInsets.all(5.2),
-                    child: TextFormField(
-                      validator: (value) {
-                        if (value == null || value.isEmpty) {
-                          return "Поле обязательно к заполнению";
-                        }
-                        return null;
-                      },
-                      controller: _bdController,
-                      maxLength: 3,
-                      decoration: InputDecoration(labelText: "Корпус"),
-                      keyboardType: TextInputType.number,
-                      inputFormatters: <TextInputFormatter>[
-                        FilteringTextInputFormatter.digitsOnly
-                      ], // Only numbers can be entered
-                    ),
-
-                  ),
-                  Padding(
-                    padding: EdgeInsets.all(5.2),
-                    child: TextFormField(
-                      validator: (value) {
-                        if (value == null || value.isEmpty) {
-                          return "Поле обязательно к заполнению";
-                        }
-                        return null;
-                      },
-                      controller: _crController,
-                      maxLength: 5,
-                      decoration: InputDecoration(labelText: "Аудитория"),
-                      keyboardType: TextInputType.number,
-                      inputFormatters: <TextInputFormatter>[
-                        FilteringTextInputFormatter.digitsOnly
-                      ], // Only numbers can be entered
-                    ),
-
-                  ),
-                  Padding(
-                      padding: EdgeInsets.all(5.2),
-                      child: SizedBox(
-                          child: DatePicker(),
-                          height: 40
-                      )
-                  ),
-                  Padding(
-                    padding: const EdgeInsets.all(5.2),
-                    child: TextButton(
-                      style: TextButton.styleFrom(
-                        minimumSize: Size(width, 50),
-                      ),
-                      child: Text("Добавить"),
-                      onPressed: () async {
-                        setState(() {
-                          getDropDownValues();
-                          if (_addLessonKey.currentState!.validate() && _checkValues()) {
-                            Lesson lesson = Lesson(
-                              name: _ddLessonName,
-                              building: int.parse(_bdController.text),
-                              classroom: int.parse(_crController.text),
-                              groupp: _ddGroupp,
-                              course: _ddCourse,
-                              date: selectedDate.millisecondsSinceEpoch,
-                              starttime: _ddStartTime,
-                              type: _ddType,
-                              state: 0,
-                            );
-
-                            DatabaseHelper.instance.insertLesson(lesson);
-                            resetDropDownValues();
-                            ScaffoldMessenger.of(context).showSnackBar(
-                                SnackBar(
-                                  content: Text('Добавлено'),
-                                  backgroundColor: Colors.blueGrey,
-                                  behavior: SnackBarBehavior.floating,
-                                  duration: Duration(milliseconds: 1200),
-                                  margin: EdgeInsets.symmetric(vertical: 30.0, horizontal: 150.0),
-                                  elevation: 30,
-                                )
-                            );
-                          }
-                        });
-                      },
-                    ),
-                  )
-                ],
-                ),
-                ),
-              ),
-            ],
+              ],
             ),
           );
         });
   }
 
   bool _checkValues() {
-    try {
-      int.parse(_crController.text);
-      int.parse(_bdController.text);
-      return (_ddLessonName != "" &&
-        _ddGroupp != "");
-      }
-      catch (e){
-        ScaffoldMessenger.of(context).showSnackBar(
-            SnackBar(
-              content: Text('Проверьте корректность данных'),
-              duration: Duration(milliseconds: 1200),
-              backgroundColor: Colors.blueGrey,
-              behavior: SnackBarBehavior.floating,
-              margin: EdgeInsets.symmetric(vertical: 30.0, horizontal: 150.0),
-              elevation: 30,
-            )
-        );
-        return false;
-      }
+    return _ddStartTime > DateTime.now().millisecondsSinceEpoch &&
+    _ddLessonName != "" &&
+    _ddGroupp != "" &&
+    _ddCourse != "";
   }
+
   _getGroupsFromDatabase() async {
-    List<Student> temp =  await DatabaseHelper.instance.getGroupsFromStudents();
     groups.clear();
-    if(temp.isNotEmpty){
-      for (var i in temp){
-        if (!groups.contains(i.groupp)){
-          groups.add(i.groupp);
+    courses.clear();
+    List<Groupp> tempGroupps = await DatabaseHelper.instance.getGroupps();
+    if (tempGroupps.isNotEmpty) {
+      for (var i in tempGroupps) {
+        if (!groups.contains(i.name)) {
+          groups.add(i.name);
+        }
+        if (!courses.contains(i.course.toString())) {
+          courses.add(i.course.toString());
         }
       }
       groups.remove(" ");
+      courses.remove(" ");
       selectedGroup = groups[0];
-    }
-    else {
+      selectedCourse = courses[0];
+    } else {
       groups = [" "];
       selectedGroup = " ";
+      courses = [" "];
+      selectedCourse = " ";
     }
   }
 
   _getLessonsListFromDatabase() async {
-    List<DropDownListModel> temp =  await DatabaseHelper.instance.getLessonsDropDownList();
+    List<DropDownListModel> temp =
+        await DatabaseHelper.instance.getLessonsDropDownList();
     lessonsFromDB.clear();
-    if(temp.isNotEmpty) {
-      for (var i in temp){
-        if (!lessonsFromDB.contains(i.name)){
+    if (temp.isNotEmpty) {
+      for (var i in temp) {
+        if (!lessonsFromDB.contains(i.name)) {
           lessonsFromDB.add(i.name);
         }
       }
       lessonsFromDB.remove(" ");
       selectedLesson = lessonsFromDB[0];
-    }
-    else {
+    } else {
       lessonsFromDB = [" "];
       selectedLesson = " ";
     }
   }
 
-  void calendarTapped(CalendarTapDetails details) {
+  void calendarTapped(CalendarTapDetails details) async {
+    // print("##############################");
+    // print(details.appointments![0].recurrenceRule);
+    // print(details.appointments![0].appointmentType);
+    // print(details.appointments);
+    // print("##############################");
     if (details.targetElement == CalendarElement.appointment ||
-        details.targetElement == CalendarElement.agenda) {
-      final Lesson appointmentDetails = details.appointments![0];
-      _subjectText = "${appointmentDetails.name} ${appointmentDetails.groupp}-${appointmentDetails.course}\n${appointmentDetails.type} ${appointmentDetails.building}-${appointmentDetails.classroom}";
-      _dateText = DateFormat('MMMM dd, yyyy')
-          .format(DateTime.fromMillisecondsSinceEpoch(appointmentDetails.starttime))
-          .toString();
-      _startTimeText =
-          DateFormat('hh:mm a').format(DateTime.fromMillisecondsSinceEpoch(appointmentDetails.starttime)).toString();
-      showDialog(
-          context: context,
-          builder: (BuildContext context) {
-            return AlertDialog(
-              title: Text('$_subjectText'),
-              content: SizedBox(
-                height: 80,
-                child: Column(
+        details.targetElement == CalendarElement.agenda && details.appointments!.isNotEmpty) {
+      await _getGroupsFromDatabase();
+      await _getLessonsListFromDatabase();
+        // if (details.appointments![0].recurrenceRule != null){
+          int id = await DatabaseHelper.instance.getLessonID(details.appointments![0].starttime);
+        // }
+        double width = MediaQuery.of(context).size.width;
+        selectedGroup = groups[0];
+        showDialog(
+            context: context,
+            builder: (BuildContext context) {
+              return AlertDialog(
+                content: Stack(
+                  clipBehavior: Clip.none,
                   children: <Widget>[
-                    Row(
-                      children: <Widget>[
-                        Text(
-                          '$_startTimeText\n$_dateText',
-                          style: TextStyle(
-                            fontWeight: FontWeight.w400,
-                            fontSize: 20,
-                          ),
+                    _xMark(),
+                    Form(
+                      key: _addLessonKey,
+                      child: SingleChildScrollView(
+                        child: Column(
+                          mainAxisSize: MainAxisSize.min,
+                          children: <Widget>[
+                            const Padding(
+                              padding: EdgeInsets.all(0),
+                              child: Text("Редактирование занятия"),
+                            ),
+                            _title("Название занятия"),
+                            _buildDropDown(lessonsFromDB, selectedLesson),
+                            _title("Группа"),
+                            _buildDropDown(groups, selectedGroup),
+                            _title("Курс"),
+                            _buildDropDown(courses, selectedCourse),
+                            _title("Время начала"),
+                            _buildDropDown(time, selectedTime),
+                            _title("Тип"),
+                            _buildDropDown(type, selectedType),
+                            _title("Дублирование"),
+                            _buildDropDown(["Нет", "Каждую неделю", "Каждые две недели"], "Нет"),
+                            Padding(
+                              padding: EdgeInsets.all(0),
+                              child: TextFormField(
+                                validator: (value) {
+                                  if (value == null || value.isEmpty) {
+                                    return "Поле обязательно к заполнению";
+                                  }
+                                  return null;
+                                },
+                                controller: _bdController,
+                                maxLength: 3,
+                                decoration: InputDecoration(labelText: "Корпус"),
+                                keyboardType: TextInputType.number,
+                                inputFormatters: <TextInputFormatter>[
+                                  FilteringTextInputFormatter.digitsOnly
+                                ], // Only numbers can be entered
+                              ),
+                            ),
+                            Padding(
+                              padding: EdgeInsets.all(0),
+                              child: TextFormField(
+                                validator: (value) {
+                                  if (value == null || value.isEmpty) {
+                                    return "Поле обязательно к заполнению";
+                                  }
+                                  return null;
+                                },
+                                controller: _crController,
+                                maxLength: 5,
+                                decoration: InputDecoration(labelText: "Аудитория"),
+                                keyboardType: TextInputType.number,
+                                inputFormatters: <TextInputFormatter>[
+                                  FilteringTextInputFormatter.digitsOnly
+                                ], // Only numbers can be entered
+                              ),
+                            ),
+                            datePicker(),
+                            Padding(
+                              padding: const EdgeInsets.all(0),
+                              child: TextButton(
+                                style: TextButton.styleFrom(
+                                  minimumSize: Size(width, 50),
+                                ),
+                                child: Text("Внести изменения"),
+                                onPressed: () async {
+                                  getDropDownValues();
+                                  if (_addLessonKey.currentState!.validate() &&
+                                      _checkValues()) {
+                                    Lesson lesson = Lesson(
+                                      id: id,
+                                      name: _ddLessonName,
+                                      building: int.parse(_bdController.text),
+                                      classroom: int.parse(_crController.text),
+                                      groupp: _ddGroupp,
+                                      course: _ddCourse,
+                                      date: selectedDate.millisecondsSinceEpoch,
+                                      starttime: _ddStartTime,
+                                      type: _ddType,
+                                      state: 0,
+                                      recurrenceRule: '',
+                                    );
+                                      DatabaseHelper.instance.updateLesson(lesson);
+                                      resetDropDownValues();
+                                      ScaffoldMessenger.of(context)
+                                          .showSnackBar(const SnackBar(
+                                        content: Text('Изменено!'),
+                                        backgroundColor: Colors.blueGrey,
+                                        behavior: SnackBarBehavior.floating,
+                                        duration: Duration(milliseconds: 1200),
+                                        margin: EdgeInsets.symmetric(
+                                            vertical: 30.0, horizontal: 150.0),
+                                        elevation: 30,
+                                      ));
+                                  }
+                                  setState(() {});
+                                },
+                              ),
+                            )
+                          ],
                         ),
-                      ],
+                      ),
                     ),
-                    Row(
-                      children: <Widget>[
-                        Text(_timeDetails!,
-                            style: TextStyle(
-                                fontWeight: FontWeight.w400, fontSize: 15)),
-                      ],
-                    )
                   ],
                 ),
-              ),
-              actions: <Widget>[
-                TextButton(
-                    onPressed: () {
-                      Navigator.of(context).pop();
-                    },
-                    child: Text('Закрыть'))
-              ],
-            );
-          });
-    }
+              );
+            });
+      }
+    else null;
   }
 
   Widget calendarItem(List<Lesson> collection) {
     return SfCalendar(
       onTap: calendarTapped,
+      onLongPress: deleteNote,
       showDatePickerButton: true,
       allowViewNavigation: true,
-      allowedViews: const <CalendarView>
-      [
+      allowedViews: const <CalendarView>[
         CalendarView.day,
         CalendarView.week,
         CalendarView.month,
@@ -746,50 +729,182 @@ class _CalendarPageState extends State<CalendarPage>{
       firstDayOfWeek: 1,
       view: CalendarView.month,
       dataSource: LessonDataSource(collection),
-      monthViewSettings:  MonthViewSettings(
+      scheduleViewSettings: ScheduleViewSettings(
+        appointmentTextStyle: AppointmentStyle(),
+      ),
+      monthViewSettings: MonthViewSettings(
           showAgenda: true,
-          appointmentDisplayMode: MonthAppointmentDisplayMode.appointment
-      ),
-      appointmentTextStyle: const TextStyle(
-          fontFamily: "Montserrat-SemiBold",
-          fontSize: 12,
-          color: Colors.black
-      ),
+          agendaStyle: AgendaStyle(
+              appointmentTextStyle: AppointmentStyle(),
+          ),
+          appointmentDisplayMode: MonthAppointmentDisplayMode.appointment),
+      appointmentTextStyle: AppointmentStyle(),
       headerStyle: const CalendarHeaderStyle(
         textStyle: TextStyle(
-            fontFamily: "Montserrat-SemiBold",
+            fontFamily: "Montserrat-Regular",
             fontSize: 20,
-            color: Colors.black
-        ),
+            color: Colors.black),
       ),
       viewHeaderStyle: ViewHeaderStyle(
           dayTextStyle: TextStyle(
-              fontFamily: "Montserrat-SemiBold",
+              fontFamily: "Montserrat-Regular",
               fontSize: 16,
-              color: Colors.black
-          )
-      ),
+              color: Colors.black)),
     );
   }
 
   void _addDiscipline() {
+    if (_controllerLesson.text.isNotEmpty) {
+        DatabaseHelper.instance.insertIntoLessonsDropDownList(
+            DropDownListModel(name: _controllerLesson.text));
+      }
+  }
 
-    if(_controllerLesson
-        .text.isNotEmpty){
-      DatabaseHelper.instance
-          .insertIntoLessonsDropDownList(
-          DropDownListModel(
-              name: _controllerLesson
-                  .text));
-    }
+  void deleteNote(CalendarLongPressDetails calendarLongPressDetails) {
+    showDialog(
+        context: context,
+        builder: (BuildContext context) {
+          return AlertDialog(
+            content: Stack(
+              clipBehavior: Clip.none,
+              children: <Widget>[
+                _xMark(),
+                Form(
+                  child: Column(
+                    mainAxisSize: MainAxisSize.min,
+                    children: <Widget>[
+                      const Padding(
+                        padding: EdgeInsets.all(8.0),
+                        child: Text("Удалить запись?"),
+                      ),
+                      Row(
+                        mainAxisAlignment: MainAxisAlignment.spaceBetween,
+                        children: <Widget>[
+                          Padding(
+                              padding: EdgeInsets.all(8.0),
+                              child: TextButton(
+                                onPressed: () {
+                                  if (calendarLongPressDetails.targetElement ==
+                                          CalendarElement.appointment ||
+                                      calendarLongPressDetails.targetElement ==
+                                          CalendarElement.agenda) {
+                                    final Lesson appointmentDetails =
+                                        calendarLongPressDetails
+                                            .appointments![0];
+                                    DatabaseHelper.instance
+                                        .removeLessonByDateAndTime(
+                                            appointmentDetails.date,
+                                            appointmentDetails.starttime);
+                                  }
+                                  setState(() {
+                                    Navigator.of(context).pop();
+                                    ScaffoldMessenger.of(context)
+                                        .showSnackBar(const SnackBar(
+                                      content: Text('Запись удалена'),
+                                      backgroundColor: Colors.blueGrey,
+                                      behavior: SnackBarBehavior.floating,
+                                      duration: Duration(milliseconds: 1200),
+                                      margin: EdgeInsets.symmetric(
+                                          vertical: 30.0, horizontal: 150.0),
+                                      elevation: 30,
+                                    ));
+                                  });
+                                },
+                                child: const Text("Удалить"),
+                              )),
+                          Padding(
+                              padding: EdgeInsets.all(8.0),
+                              child: TextButton(
+                                onPressed: () {
+                                  Navigator.of(context).pop();
+                                },
+                                child: const Text("Отмена"),
+                              )),
+                        ],
+                      )
+                    ],
+                  ),
+                ),
+              ],
+            ),
+          );
+        });
+  }
+
+  Padding datePicker() {
+    return Padding(
+        padding: EdgeInsets.all(0),
+        child: SizedBox(child: DatePicker(), height: 55));
+  }
+
+  TextStyle AppointmentStyle() {
+    return const TextStyle(
+        fontFamily: "Montserrat-SemiBold", fontSize: 12, color: Colors.black);
+  }
+
+  Widget _title(String title) {
+    return Padding(
+      padding: const EdgeInsets.only(left: 16.0, top: 16),
+      child: Column(
+        crossAxisAlignment: CrossAxisAlignment.start,
+        children: <Widget>[
+          // SizedBox(height: 10.0),
+          Text(
+            title.toUpperCase(),
+            style: TextStyle(fontSize: 18.0),
+          ),
+          Divider(
+            color: Colors.transparent,
+          ),
+        ],
+      ),
+    );
+  }
+
+  _buildDropDown(List<String> lessonsFromDB, String? selectedLesson) {
+    return Padding(
+      padding: EdgeInsets.all(0),
+      child: DropdownButtonFormField<String>(
+        icon: Icon(Icons.keyboard_arrow_down),
+        decoration: InputDecoration(
+            border: OutlineInputBorder()),
+        value: selectedLesson,
+        items: lessonsFromDB
+            .map((item) => DropdownMenuItem<String>(
+          value: item,
+          child: Text(item),
+        ))
+            .toList(),
+        onChanged: (selectedLesson != null ||
+            selectedLesson!.trim() != "")
+            ? (item) =>
+            setState(() => selectedLesson = item)
+            : null,
+      ),
+    );
+  }
+
+  _xMark() {
+    return Positioned(
+      right: -40.0,
+      top: -40.0,
+      child: InkResponse(
+        onTap: () {
+          Navigator.of(context).pop();
+        },
+        child: CircleAvatar(
+          backgroundColor: Color(mainColor),
+          child: Icon(Icons.close, color: Colors.black,),
+        ),
+      ),
+    );
   }
 }
 
 class LessonDataSource extends CalendarDataSource {
-  LessonDataSource(List<Lesson> source){
+  LessonDataSource(List<Lesson> source) {
     appointments = source;
   }
-
 
   @override
   String getSubject(int index) {
@@ -803,9 +918,16 @@ class LessonDataSource extends CalendarDataSource {
 
   @override
   DateTime getEndTime(int index) {
-    return DateTime.fromMillisecondsSinceEpoch(appointments![index].starttime + 600000 * 9);
+    return DateTime.fromMillisecondsSinceEpoch(
+        appointments![index].starttime + 600000 * 9);
   }
 
-
+  @override
+  String? getRecurrenceRule(int index) {
+    return appointments![index].recurrenceRule;
+  }
+  @override
+  Color getColor(int index) {
+    return Color(mainColor);
+  }
 }
-
