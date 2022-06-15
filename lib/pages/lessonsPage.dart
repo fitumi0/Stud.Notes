@@ -1,12 +1,10 @@
 import 'package:flutter/material.dart';
 import 'package:flutter_proj/database/models/groupp.dart';
-import 'package:flutter_proj/pages/calendarPage.dart';
 import 'package:flutter_proj/pages/workspaces/studMenu.dart';
 import 'package:flutter_proj/pages/workspaces/themes.dart';
 import 'package:flutter_speed_dial/flutter_speed_dial.dart';
 import 'package:syncfusion_flutter_calendar/calendar.dart';
 import '../database/databaseHelper.dart';
-import '../database/models/lesson.dart';
 import '../database/models/student.dart';
 
 
@@ -97,6 +95,14 @@ class _StudGroupsPageState extends State<StudGroupsPage>
         children: [
           SpeedDialChild(
               backgroundColor: Color(wheatColor),
+              child: Icon(Icons.add),
+              label: "Добавить студента",
+              labelBackgroundColor: Color(wheatColor),
+              onTap: () {
+                addStudentShowDialog();
+              }),
+          SpeedDialChild(
+              backgroundColor: Color(wheatColor),
               child: Icon(Icons.refresh),
               label: "Обновить",
               labelBackgroundColor: Color(wheatColor),
@@ -104,14 +110,6 @@ class _StudGroupsPageState extends State<StudGroupsPage>
                 setState(() {
 
                 });
-              }),
-          SpeedDialChild(
-              backgroundColor: Color(wheatColor),
-              child: Icon(Icons.add),
-              label: "Добавить студента",
-              labelBackgroundColor: Color(wheatColor),
-              onTap: () {
-                addStudentShowDialog();
               }),
         ],
       ),
@@ -148,6 +146,7 @@ class _StudGroupsPageState extends State<StudGroupsPage>
               ),
               Form(
                 key: _addStudentKey,
+                child:  SingleChildScrollView(
                 child: Column(
                   mainAxisSize: MainAxisSize.min,
                   children: <Widget>[
@@ -212,23 +211,36 @@ class _StudGroupsPageState extends State<StudGroupsPage>
                     Padding(
                       padding: EdgeInsets.all(8.0),
                       child: DropdownButtonFormField<String>(
-                        decoration: InputDecoration(
-                            errorStyle:
-                            const TextStyle(color: Colors.redAccent, fontSize: 16.0),
-                            border: OutlineInputBorder(
-                                borderRadius: BorderRadius.circular(16.0))),
-                        value: selectedCourse,
-                        items: courses
-                            .map((item) => DropdownMenuItem<String>(
-                          value: item,
-                          child: Text(item),
-                        ))
-                            .toList(),
-                        onChanged: (item) => setState(() {
-                          selectedCourse = item;
-                        }),
+                          isExpanded: true,
+                          icon: Icon(Icons.keyboard_arrow_down),
+                          value: selectedCourse,
+                          items: courses
+                              .map((item) => DropdownMenuItem<String>(
+                              value: item,
+                              child: Text(item),)).toList(),
+                              onChanged: (item) => setState(() {
+                                selectedCourse = item;
+                              })
                       ),
-
+                    ),
+                    Padding(
+                      padding: EdgeInsets.only(left: 8.0),
+                      child: Column(
+                        crossAxisAlignment: CrossAxisAlignment.start,
+                        children: <Widget>[
+                          // SizedBox(height: 10.0),
+                          Text(
+                            "КУРС",
+                            style: TextStyle(
+                              fontSize: 14.0,
+                              color: Color(lightGrey),
+                            ),
+                          ),
+                          Divider(
+                            color: Colors.transparent,
+                          ),
+                        ],
+                      ),
                     ),
                     Padding(
                       padding: EdgeInsets.all(8.0),
@@ -237,9 +249,7 @@ class _StudGroupsPageState extends State<StudGroupsPage>
                         decoration: InputDecoration(
                             errorStyle:
                             const TextStyle(color: Colors.redAccent, fontSize: 16.0),
-                            hintText: 'Связь со студентом (Почта, ВК, ТГ)',
-                            border: OutlineInputBorder(
-                                borderRadius: BorderRadius.circular(16.0))),
+                            hintText: 'Связь (e-mail, VK)',),
                       ),
 
                     ),
@@ -275,6 +285,7 @@ class _StudGroupsPageState extends State<StudGroupsPage>
                       ),
                     )
                   ],
+                ),
                 ),
               ),
             ],

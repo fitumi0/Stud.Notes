@@ -3,6 +3,8 @@ import 'package:flutter/material.dart';
 const mainColor = 0xFFA5AEFF;
 const subColor = 0xFFC8E4FE;
 const wheatColor = 0xFFebebeb;
+const lightGrey = 0xFFC8C8C8;
+
 
 Map<int, Color> color =
 {

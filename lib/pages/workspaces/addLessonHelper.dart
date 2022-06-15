@@ -1,10 +1,7 @@
 import 'package:flutter/material.dart';
 
-import '../calendarPage.dart';
 
-
-DateTime workDay = DateTime.now().hour > 19 ? DateTime.fromMillisecondsSinceEpoch(DateTime.now().millisecondsSinceEpoch + hour * 5) : DateTime.now();
-DateTime selectedDate = workDay.millisecondsSinceEpoch < DateTime.now().millisecondsSinceEpoch ? DateTime.now() : workDay;
+DateTime selectedDate = DateTime.now();
 class DatePicker extends StatefulWidget {
   const DatePicker();
 
@@ -38,10 +35,10 @@ class _DatePickerState extends State<DatePicker> {
 
     final DateTime? selected = await showDatePicker(
         context: context,
-        // TODO: FIX => locale: await initializeDateFormatting('ru_RU'),
-        initialDate: workDay.millisecondsSinceEpoch < selectedDate.millisecondsSinceEpoch ? selectedDate : workDay,
+        //TODO: locale:
+        initialDate: selectedDate,
         helpText: "Выберите дату занятия",
-        firstDate: workDay,
+        firstDate: DateTime(DateTime.now().year-1),
         lastDate: DateTime(2050),
         initialEntryMode: DatePickerEntryMode.calendarOnly);
     if (selected != null && selected != selectedDate) {

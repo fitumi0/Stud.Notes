@@ -1,9 +1,9 @@
 import 'package:flutter/material.dart';
+import 'package:intl/intl.dart';
 
 import '../database/databaseHelper.dart';
 import '../database/models/lesson.dart';
 import 'calendarPage.dart';
-import 'lessonsPage.dart';
 
 class HomePage extends StatefulWidget {
   const HomePage();
@@ -19,7 +19,6 @@ class _HomePageState extends State<HomePage>
       body: SafeArea(
         child: Column(
             children: <Widget>[
-              Text("Ближайшие занятия:"),
               Expanded(
                   child: LessonsTab()
               )
@@ -62,31 +61,51 @@ class _LessonsTabState extends State<LessonsTab>
               if (!snapshot.hasData) {
                 return const Center(child: CircularProgressIndicator());
               }
-              return snapshot.data!.isEmpty
-                  ? const Center(child: Text('Пусто'))
+              final now = DateTime.now();
+              final today = DateTime(now.year, now.month, now.day);
+              final tomorrow = DateTime(now.year, now.month, now.day + 1);
+              List<Lesson> items = [];
+              snapshot.data!.forEach((element) {
+                if(element.starttime > today.millisecondsSinceEpoch && element.starttime < tomorrow.millisecondsSinceEpoch){
+                  items.add(element);
+                }
+                items.sort((a, b) => a.starttime.compareTo(b.starttime)) ;
+              });
+              return (items.isEmpty || DateTime.now().millisecondsSinceEpoch > items.last.starttime)
+                  ? Center(
+                  child: Column(
+                    mainAxisAlignment:  MainAxisAlignment.center,
+                    children: const [
+                      Icon(
+                        Icons.event_note,
+                        size: 150,),
+                      Text("На сегодня всё", style: TextStyle(color: Colors.grey),),
+                    ],
+                  )
+              )
                   : ListView(
-                children: snapshot.data!.map((lesson) {
+                children: items.map((lesson) {
+
                   return Center(
                     child: Card(
                       child: ListTile(
                         title: Text(
-                            "${lesson.building}-${lesson.classroom} ${lesson.name} ${lesson.type}\n"
-                                "${DateTime.fromMillisecondsSinceEpoch(lesson.date).day}"
-                                "/${DateTime.fromMillisecondsSinceEpoch(lesson.date).month}"
-                                "/${DateTime.fromMillisecondsSinceEpoch(lesson.date).year}\n"
-                                "${DateTime.fromMillisecondsSinceEpoch(lesson.starttime).hour}:${DateTime.fromMillisecondsSinceEpoch(lesson.starttime).minute == 0 ? "00" : DateTime.fromMillisecondsSinceEpoch(lesson.starttime).minute} - "
+                            "${DateTime.fromMillisecondsSinceEpoch(lesson.starttime).hour}:${DateTime.fromMillisecondsSinceEpoch(lesson.starttime).minute == 0 ? "00" : DateTime.fromMillisecondsSinceEpoch(lesson.starttime).minute} - "
                                 "${DateTime.fromMillisecondsSinceEpoch(lesson.starttime + lessonTime).hour}:${DateTime.fromMillisecondsSinceEpoch(lesson.starttime + lessonTime).minute == 0 ? "00" : DateTime.fromMillisecondsSinceEpoch(lesson.starttime + lessonTime).minute} "
-                                "${lesson.groupp}-${lesson.course}"),
+                                "${lesson.groupp}-${lesson.course}\n"
+                            "${lesson.building}-${lesson.classroom} ${lesson.name} ${lesson.type}\n"
+                                "${new DateFormat("MMMM dd yyyy").format(DateTime.now())}",
+                          style: checkTime(lesson, tomorrow),
+                                ),
                         onTap: () {
                           setState(() {
                             // TODO: ITEM MENU
                             // selectedID = lesson.id;
-
                           });
                         },
                         onLongPress: () {
                           setState(() {
-                            DatabaseHelper.instance.removeLesson(lesson.id!);
+                             // DatabaseHelper.instance.removeLesson(lesson);
                           });
                         },
                       ),
@@ -97,6 +116,16 @@ class _LessonsTabState extends State<LessonsTab>
             }),
       ),
     );
+  }
+  TextStyle checkTime(Lesson lesson, DateTime tomorrow) {
+    Color color = Colors.black;
+    if (lesson.starttime + lessonTime < DateTime.now().millisecondsSinceEpoch){
+      color = Colors.grey;
+    }
+    else if (DateTime.now().millisecondsSinceEpoch >= lesson.starttime  && DateTime.now().millisecondsSinceEpoch <= lesson.starttime + lessonTime){
+      color = Colors.redAccent;
+    }
+    return TextStyle(color: color);
   }
 
   @override

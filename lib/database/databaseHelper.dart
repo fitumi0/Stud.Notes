@@ -1,7 +1,6 @@
 import 'dart:async';
 import 'dart:io';
 
-import 'package:flutter/services.dart';
 import 'package:flutter_proj/database/models/groupp.dart';
 import 'package:flutter_proj/database/models/student.dart';
 import 'package:path/path.dart';
@@ -48,7 +47,6 @@ class DatabaseHelper {
       starttime INTEGER NOT NULL,
       type TEXT NOT NULL,
       state INTEGER NOT NULL,
-      recurrenceRule TEXT,
       FOREIGN KEY (groupp, course) REFERENCES groupp_list ON DELETE CASCADE ON UPDATE CASCADE
     );
     ''');
@@ -136,27 +134,23 @@ class DatabaseHelper {
     return LessonList;
   }
 
-  Future<int> getLessonID(int date) async {
+  Future<int> getLessonIDbyStartTime(Lesson lesson) async {
     Database db = await instance.database;
-    var id = await db.rawQuery('SELECT id FROM lessons WHERE starttime=$date');
+    var id = await db.rawQuery('SELECT id FROM lessons WHERE starttime=\'${lesson.starttime}\'');
     return int.parse(id[0].values.elementAt(0).toString());
   }
 
   void insertLesson(Lesson lesson) async {
     Database db = await instance.database;
-    await db.rawQuery('''INSERT INTO lessons(id, name, building, classroom, groupp, course, date, starttime, type, state, recurrenceRule)
+    await db.rawQuery('''INSERT INTO lessons(id, name, building, classroom, groupp, course, date, starttime, type, state)
     VALUES( (SELECT IFNULL (MAX(id), 0) + 1 FROM lessons), '${lesson.name}', ${lesson.building}, ${lesson.classroom}, '${lesson.groupp}', 
-    ${lesson.course}, ${lesson.date}, ${lesson.starttime}, '${lesson.type}', ${lesson.state}, NULL)
+    ${lesson.course}, ${lesson.date}, ${lesson.starttime}, '${lesson.type}', ${lesson.state})
     ''');
   }
 
   Future<int> removeLesson(int id) async {
     Database db = await instance.database;
     return await db.delete('lessons', where: 'id = ?', whereArgs: [id]);
-  }
-  Future<int> removeLessonByDateAndTime(int date, int starttime) async {
-    Database db = await instance.database;
-    return await db.delete('lessons', where: 'date = ? and starttime = ?', whereArgs: [date, starttime]);
   }
 
   Future<int> updateLesson(Lesson lesson) async {
@@ -167,7 +161,7 @@ class DatabaseHelper {
 
   Future<bool> isLessonTimeInDataBase(Lesson lesson) async {
     Database db = await instance.database;
-    var result = await db.rawQuery("SELECT starttime FROM lessons WHERE date=${lesson.date} AND starttime=${lesson.starttime}");
+    var result = await db.rawQuery("SELECT starttime FROM lessons WHERE starttime=${lesson.starttime}");
     return result.isNotEmpty;
   }
 
@@ -193,11 +187,17 @@ class DatabaseHelper {
     return StudentList;
   }
 
+  Future<Student> getStudentByID(int ID) async {
+    Database db = await instance.database;
+    var student = await db.rawQuery("SELECT * FROM students WHERE id=$ID");
+    return student.map((c) => Student.fromMap(c)).toList()[0];
+  }
+
   void insertStudents(Student student) async {
     Database db = await instance.database;
     await db.rawQuery('''
     INSERT INTO students(firstname, secondname, course, groupp, social, rating, debt)
-    VALUES(\'${student.firstname}\', \'${student.secondname}\', ${student.course}, \'${student.groupp}\', \'${student.social}\', ${student.rating}, NULL)
+    VALUES(\'${student.firstname}\', \'${student.secondname}\', ${student.course}, \'${student.groupp}\', \'${student.social}\', ${student.rating}, '')
     ''');
   }
 
@@ -211,6 +211,12 @@ class DatabaseHelper {
     return await db.update('students', student.toMap(),
         where: "id = ?", whereArgs: [student.id]);
   }
+
+  void updateDebt(Student student, String debt, String social) async {
+    Database db = await instance.database;
+    await db.rawQuery("UPDATE students SET debt = '$debt', social = '$social' WHERE id = ${student.id}");
+  }
+   
 
 
   /// END STUDENTS

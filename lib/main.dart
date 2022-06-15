@@ -1,6 +1,5 @@
 // @dart=2.9
 import 'package:flutter/material.dart';
-import 'package:flutter_localizations/flutter_localizations.dart';
 import 'package:flutter_proj/pages/lessonsPage.dart';
 import 'package:flutter_proj/pages/calendarPage.dart';
 import 'package:flutter_proj/pages/homePage.dart';
@@ -22,14 +21,6 @@ class MyApp extends StatelessWidget {
   @override
   Widget build(BuildContext context) {
       return MaterialApp(
-
-        //TODO: FIX
-        // localizationsDelegates: GlobalMaterialLocalizations.delegates,
-        // supportedLocales: [
-        //   const Locale('ru', 'RU'),
-        //   const Locale('en', 'US'),
-        //   const Locale('en', 'GB'),
-        // ],
       title: "StudNotes",
       theme: mainTheme,
       home: const NavigatePanel(),
@@ -58,7 +49,7 @@ class _NavigatePanelState extends State<NavigatePanel> {
       _selectedIndex = index;
       switch(index){
         case 0: _title = "Расписание"; break;
-        case 1: _title = "Главная"; break;
+        case 1: _title = "Ближайшие занятия"; break;
         case 2: _title = "Студенты"; break;
       }
     });
@@ -72,17 +63,30 @@ class _NavigatePanelState extends State<NavigatePanel> {
         title: Text(_title),
         elevation: 0,
         actions: <Widget>[
-          PopupMenuButton<String>(
-            onSelected: (value) => handleClickMain(context, value),
-            itemBuilder: (BuildContext context) {
-              return {'Настройки'}.map((String choice) {
-                return PopupMenuItem<String>(
-                  value: choice,
-                  child: Text(choice),
-                );
-              }).toList();
-            },
-          ),
+          IconButton(
+              onPressed: () =>
+                Navigator.of(context).push<void>(
+                  MaterialPageRoute<void>(
+                    builder: (BuildContext context) {
+                      return SettingsPage();
+                    },
+                  ),
+                ),
+              icon: const Icon(
+                  Icons.settings_sharp,
+              ),
+          )
+          // PopupMenuButton<String>(
+          //   onSelected: (value) => handleClickMain(context, value),
+          //   itemBuilder: (BuildContext context) {
+          //     return {'Настройки'}.map((String choice) {
+          //       return PopupMenuItem<String>(
+          //         value: choice,
+          //         child: Text(choice),
+          //       );
+          //     }).toList();
+          //   },
+          // ),
         ],
       ),
       body: IndexedStack(
@@ -111,16 +115,16 @@ class _NavigatePanelState extends State<NavigatePanel> {
   }
 }
 
-void handleClickMain(BuildContext context, String value) {
-  switch (value) {
-    case 'Настройки':
-      Navigator.of(context).push<void>(
-        MaterialPageRoute<void>(
-          builder: (BuildContext context) {
-            return SettingsPage();
-          },
-        ),
-      );
-      break;
-  }
-}
+// void handleClickMain(BuildContext context, String value) {
+//   switch (value) {
+//     case 'Настройки':
+//       Navigator.of(context).push<void>(
+//         MaterialPageRoute<void>(
+//           builder: (BuildContext context) {
+//             return SettingsPage();
+//           },
+//         ),
+//       );
+//       break;
+//   }
+// }

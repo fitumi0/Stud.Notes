@@ -1,11 +1,9 @@
-import 'package:flutter/cupertino.dart';
 import 'package:flutter/services.dart';
 import 'package:flutter_proj/database/models/dropDownListModel.dart';
 import 'package:flutter_proj/pages/workspaces/addLessonHelper.dart';
 import 'package:flutter/material.dart';
 import 'package:flutter_proj/pages/workspaces/themes.dart';
 import 'package:flutter_speed_dial/flutter_speed_dial.dart';
-import 'package:intl/intl.dart';
 import 'package:syncfusion_flutter_calendar/calendar.dart';
 
 import '../database/databaseHelper.dart';
@@ -18,7 +16,7 @@ String _ddGroupp = "";
 int _ddCourse = 1;
 int _ddStartTime = 0;
 String _ddType = "";
-List<String> defaults = ["1", "10:00", "Лекция"];
+
 
 // from milliseconds
 int second = 1000;
@@ -29,24 +27,20 @@ int restTime = minute * 15;
 int lunchTime = minute * 45;
 int day = 60000 * 1440;
 
-List<String> time = [
-  "8:20",
-  "10:00",
-  "11:45",
-  "14:00",
-  "15:45",
-  "17:20",
-  "18:55",
-];
+DateTime timeFromSelected = DateTime.fromMillisecondsSinceEpoch(_ddStartTime);
+
+int semesterEndInMilliseconds = timeFromSelected.month > 1 && timeFromSelected.month <= 6 ?
+      DateTime(timeFromSelected.year, DateTime.june, 30).millisecondsSinceEpoch
+    : DateTime(timeFromSelected.year, DateTime.december, 31).millisecondsSinceEpoch;
+
+double weeksToEnd = (semesterEndInMilliseconds / (day * 7));
+
+
 String? selectedTime = "10:00";
 
-List<String> type = [
-  "Лекция",
-  "Практическое занятие",
-  "Лабораторная работа",
-  "Зачёт",
-];
 String? selectedType = 'Лекция';
+String? selectedRR = 'Нет';
+int recRule = 0;
 late bool alreadyInDatabase;
 
 late String? selectedGroup;
@@ -69,6 +63,26 @@ class _CalendarPageState extends State<CalendarPage> {
   final TextEditingController _crController = TextEditingController();
   final TextEditingController _bdController = TextEditingController();
   final _addLessonKey = GlobalKey<FormState>();
+
+  List<String> time = [
+    "8:20",
+    "10:00",
+    "11:45",
+    "14:00",
+    "15:45",
+    "17:20",
+    "18:55",
+  ];
+
+  List<String> type = [
+    "Лекция",
+    "Практическое занятие",
+    "Лабораторная работа",
+    "Зачёт",
+    "Экзамен"
+  ];
+
+  List<String> defaults = ["1", "10:00", "Лекция"];
 
 
   @override
@@ -111,7 +125,7 @@ class _CalendarPageState extends State<CalendarPage> {
         builder: (context, snapshot) {
           List<Lesson> collection = <Lesson>[];
           if (!snapshot.hasData) {
-            return Center(
+            return const Center(
               child: CircularProgressIndicator(),
             );
           }
@@ -123,18 +137,17 @@ class _CalendarPageState extends State<CalendarPage> {
                   itemExtent: height / 1.165,
                   itemBuilder: (context, int pos) {
                     for (var item in snapshot.data!) {
-                      collection.add(Lesson(
-                        name: item.name,
-                        building: item.building,
-                        classroom: item.classroom,
-                        groupp: item.groupp,
-                        course: item.course,
-                        date: item.date,
-                        starttime: item.starttime,
-                        type: item.type,
-                        state: item.state,
-                        recurrenceRule: item.recurrenceRule,
-                      ));
+                        collection.add(Lesson(
+                          name: item.name,
+                          building: item.building,
+                          classroom: item.classroom,
+                          groupp: item.groupp,
+                          course: item.course,
+                          date: item.date,
+                          starttime: item.starttime,
+                          type: item.type,
+                          state: item.state,
+                        ));
                     }
                     return calendarItem(collection);
                   });
@@ -146,28 +159,31 @@ class _CalendarPageState extends State<CalendarPage> {
         // animatedIconTheme: IconThemeData(
         //   color: Color(black)
         // ),
-        animationDuration: Duration(milliseconds: 400),
+        animationDuration: const Duration(milliseconds: 400),
         overlayOpacity: 0.24,
         overlayColor: Colors.black,
         spacing: 10,
         // onOpen: (){},
         children: [
           SpeedDialChild(
-              backgroundColor: Color(wheatColor),
-              child: Icon(Icons.settings),
-              label: "Настройки",
-              labelBackgroundColor: Color(wheatColor),
+              backgroundColor: const Color(wheatColor),
+              child: const Icon(Icons.edit),
+              label: "Предметы",
+              labelBackgroundColor: const Color(wheatColor),
               onTap: () {
                 selectedID = null;
                 showDialog(
                     context: context,
                     builder: (BuildContext context) {
                       return AlertDialog(
-                        content: StatefulBuilder(builder:
+                        content: StatefulBuilder(
+                            builder:
                             (BuildContext context, StateSetter setState) {
                           double height = MediaQuery.of(context).size.height;
+                          double width = MediaQuery.of(context).size.width;
                           return Stack(
                             children: <Widget>[
+                              _xMark(),
                               Form(
                                 child: Column(
                                   mainAxisSize: MainAxisSize.min,
@@ -180,7 +196,7 @@ class _CalendarPageState extends State<CalendarPage> {
                                       padding: const EdgeInsets.all(8.0),
                                       child: SizedBox(
                                         height: height / 3,
-                                        width: 300.0,
+                                        width: width,
                                         child: FutureBuilder<
                                                 List<DropDownListModel>>(
                                             future: DatabaseHelper.instance
@@ -201,7 +217,7 @@ class _CalendarPageState extends State<CalendarPage> {
                                                           child: Card(
                                                             color: selectedID ==
                                                                     lesson.id
-                                                                ? Colors.red
+                                                                ? Color(mainColor)
                                                                 : Colors.white,
                                                             child: ListTile(
                                                               title: Text(
@@ -221,20 +237,15 @@ class _CalendarPageState extends State<CalendarPage> {
                                       ),
                                     ),
                                     Padding(
-                                      padding: const EdgeInsets.all(8.0),
+                                      padding: const EdgeInsets.all(0),
                                       child: Column(
                                         children: [
+                                          
                                           TextField(
                                             controller: _controllerLesson,
                                             decoration: InputDecoration(
-                                                errorStyle: const TextStyle(
-                                                    color: Colors.redAccent,
-                                                    fontSize: 16.0),
-                                                hintText: 'Название дисциплины',
-                                                border: OutlineInputBorder(
-                                                    borderRadius:
-                                                        BorderRadius.circular(
-                                                            16.0))),
+                                                labelStyle: TextStyle(color: Color(lightGrey)),
+                                                hintText: 'Название дисциплины',),
                                             onSubmitted: (value) {
                                               _addDiscipline();
                                               setState(() {
@@ -243,48 +254,56 @@ class _CalendarPageState extends State<CalendarPage> {
                                             },
                                           ),
                                           Row(
+                                            mainAxisAlignment: MainAxisAlignment.spaceBetween,
                                             children: [
-                                              TextButton(
-                                                autofocus: true,
-                                                style: TextButton.styleFrom(
-                                                  minimumSize:
-                                                      const Size(100, 50),
-                                                ),
-                                                child: Text("Добавить"),
-                                                onPressed: () {
-                                                  _addDiscipline();
-                                                  setState(() {
-                                                    _controllerLesson.text = "";
-                                                  });
-                                                },
+                                              Flexible(
+                                                  child: TextButton(
+                                                    autofocus: true,
+                                                    style: TextButton.styleFrom(
+                                                      minimumSize:
+                                                      const Size(50, 50),
+                                                    ),
+                                                    child: Text("Добавить"),
+                                                    onPressed: () {
+                                                      _addDiscipline();
+                                                      setState(() {
+                                                        _controllerLesson.text = "";
+                                                      });
+                                                    },
+                                                  ),
                                               ),
-                                              TextButton(
-                                                style: TextButton.styleFrom(
-                                                  minimumSize:
-                                                      const Size(100, 50),
-                                                ),
-                                                child: Text("Удалить"),
-                                                onPressed: () {
-                                                  setState(() {
-                                                    DatabaseHelper.instance
-                                                        .removeFromLessonsDropDownList(
+                                              Flexible(
+                                                  child: TextButton(
+                                                    style: TextButton.styleFrom(
+                                                      minimumSize:
+                                                      const Size(50, 50),
+                                                    ),
+                                                    child: Text("Удалить"),
+                                                    onPressed: () {
+                                                      setState(() {
+                                                        DatabaseHelper.instance
+                                                            .removeFromLessonsDropDownList(
                                                             selectedID!);
-                                                    selectedID = null;
-                                                  });
-                                                },
+                                                        selectedID = null;
+                                                      });
+                                                    },
+                                                  ),
                                               ),
-                                              TextButton(
-                                                style: TextButton.styleFrom(
-                                                  minimumSize:
-                                                      const Size(100, 50),
-                                                ),
-                                                child: Text("Применить"),
-                                                onPressed: () {
-                                                  setState(() {
-                                                    Navigator.of(context).pop();
-                                                  });
-                                                },
+                                              Flexible(
+                                                  child: TextButton(
+                                                    style: TextButton.styleFrom(
+                                                      minimumSize:
+                                                      const Size(50, 50),
+                                                    ),
+                                                    child: Text("Применить"),
+                                                    onPressed: () {
+                                                      setState(() {
+                                                        Navigator.of(context).pop();
+                                                      });
+                                                    },
+                                                  ),
                                               ),
+
                                             ],
                                           ),
                                         ],
@@ -305,14 +324,27 @@ class _CalendarPageState extends State<CalendarPage> {
               label: "Добавить",
               labelBackgroundColor: Color(wheatColor),
               onTap: () {
+                addLessonShowDialog();
                 setState(() {
-                  addLessonShowDialog();
+
+                });
+              }),
+          SpeedDialChild(
+              backgroundColor: Color(wheatColor),
+              child: Icon(Icons.refresh),
+              label: "Обновить",
+              labelBackgroundColor: Color(wheatColor),
+              onTap: () {
+                setState(() {
+
                 });
               }),
         ],
       ),
     );
   }
+
+
 
   void getDropDownValues() {
     setState(() {
@@ -367,6 +399,18 @@ class _CalendarPageState extends State<CalendarPage> {
             break;
           }
       }
+
+      switch(selectedRR){
+        case "Нет":
+          recRule = 0;
+          break;
+        case "Каждую неделю":
+          recRule = 7;
+          break;
+        case "Каждые две недели":
+          recRule = 14;
+          break;
+      }
       if (selectedLesson != null && selectedLesson != " ") {
         _ddLessonName = selectedLesson!;
       } else {
@@ -383,18 +427,19 @@ class _CalendarPageState extends State<CalendarPage> {
     });
   }
 
-  void resetDropDownValues() {
-    setState(() {
-      Navigator.of(context).pop();
-      selectedCourse = defaults[0];
-      selectedTime = defaults[1];
-      selectedType = defaults[2];
-      _bdController.text = "";
-      _crController.text = "";
-    });
+  resetDropDownValues() {
+    Navigator.of(context).pop();
+    final now = DateTime.now();
+    final tomorrow = DateTime(now.year, now.month, now.day + 1);
+    selectedDate = DateTime.now().hour > 19 ? tomorrow : now;
+    selectedCourse = defaults[0];
+    selectedTime = defaults[1];
+    selectedType = defaults[2];
+    _bdController.text = "";
+    _crController.text = "";
   }
 
-  void addLessonShowDialog() async {
+  addLessonShowDialog() async {
     double width = MediaQuery.of(context).size.width;
     selectedGroup = groups[0];
     await _getGroupsFromDatabase();
@@ -413,56 +458,23 @@ class _CalendarPageState extends State<CalendarPage> {
                     child: Column(
                       mainAxisSize: MainAxisSize.min,
                       children: <Widget>[
-                        Padding(
-                          padding: EdgeInsets.all(0),
-                          child: Text("Новое занятие"),
-                        ),
+                        Text("Новое занятие"),
+                        SizedBox(height: 8,),
+                        _buildDropDown(lessonsFromDB, selectedLesson, 0),
                         _title("Название занятия"),
-                        _buildDropDown(lessonsFromDB, selectedLesson),
+                        _buildDropDown(groups, selectedGroup, 1),
                         _title("Группа"),
-                        _buildDropDown(groups, selectedGroup),
+                        _buildDropDown(courses, selectedCourse, 2),
                         _title("Курс"),
-                        _buildDropDown(courses, selectedCourse),
+                        _buildDropDown(time, selectedTime, 3),
                         _title("Время начала"),
-                        _buildDropDown(time, selectedTime),
+                        _buildDropDown(type, selectedType, 4),
                         _title("Тип"),
-                        _buildDropDown(type, selectedType),
-                        Padding(
-                          padding: EdgeInsets.all(0),
-                          child: TextFormField(
-                            validator: (value) {
-                              if (value == null || value.isEmpty) {
-                                return "Поле обязательно к заполнению";
-                              }
-                              return null;
-                            },
-                            controller: _bdController,
-                            maxLength: 3,
-                            decoration: InputDecoration(labelText: "Корпус"),
-                            keyboardType: TextInputType.number,
-                            inputFormatters: <TextInputFormatter>[
-                              FilteringTextInputFormatter.digitsOnly
-                            ], // Only numbers can be entered
-                          ),
-                        ),
-                        Padding(
-                          padding: EdgeInsets.all(0),
-                          child: TextFormField(
-                            validator: (value) {
-                              if (value == null || value.isEmpty) {
-                                return "Поле обязательно к заполнению";
-                              }
-                              return null;
-                            },
-                            controller: _crController,
-                            maxLength: 5,
-                            decoration: InputDecoration(labelText: "Аудитория"),
-                            keyboardType: TextInputType.number,
-                            inputFormatters: <TextInputFormatter>[
-                              FilteringTextInputFormatter.digitsOnly
-                            ], // Only numbers can be entered
-                          ),
-                        ),
+                        _buildDropDown(["Нет", "Каждую неделю", "Каждые две недели"], selectedRR, 5),
+                        _title("Дублирование"),
+                        _buildTextArea(_bdController, "Корпус", 3, false, true),
+                        _buildTextArea(_crController, "Аудитория", 5, false, true),
+
                         datePicker(),
                         Padding(
                           padding: const EdgeInsets.all(0),
@@ -471,50 +483,36 @@ class _CalendarPageState extends State<CalendarPage> {
                               minimumSize: Size(width, 50),
                             ),
                             child: Text("Добавить"),
-                            onPressed: () async {
+                            onPressed: () {
                               getDropDownValues();
                               if (_addLessonKey.currentState!.validate() &&
                                   _checkValues()) {
-                                Lesson lesson = Lesson(
-                                  name: _ddLessonName,
-                                  building: int.parse(_bdController.text),
-                                  classroom: int.parse(_crController.text),
-                                  groupp: _ddGroupp,
-                                  course: _ddCourse,
-                                  date: selectedDate.millisecondsSinceEpoch,
-                                  starttime: _ddStartTime,
-                                  type: _ddType,
-                                  state: 0,
-                                  recurrenceRule: 'FREQ=WEEKLY;INTERVAL=1',
-                                );
-                                if (!await DatabaseHelper.instance
-                                    .isLessonTimeInDataBase(lesson)) {
-                                  DatabaseHelper.instance.insertLesson(lesson);
-                                  resetDropDownValues();
-                                  ScaffoldMessenger.of(context)
-                                      .showSnackBar(const SnackBar(
-                                    content: Text('Добавлено'),
-                                    backgroundColor: Colors.blueGrey,
-                                    behavior: SnackBarBehavior.floating,
-                                    duration: Duration(milliseconds: 1200),
-                                    margin: EdgeInsets.symmetric(
-                                        vertical: 30.0, horizontal: 150.0),
-                                    elevation: 30,
-                                  ));
-                                } else {
-                                  ScaffoldMessenger.of(context)
-                                      .showSnackBar(const SnackBar(
-                                    content: Text('Выберите другое время'),
-                                    backgroundColor: Colors.blueGrey,
-                                    behavior: SnackBarBehavior.floating,
-                                    duration: Duration(milliseconds: 1200),
-                                    margin: EdgeInsets.symmetric(
-                                        vertical: 30.0, horizontal: 150.0),
-                                    elevation: 30,
-                                  ));
+                                int curDate = selectedDate.millisecondsSinceEpoch;
+                                int startTime = _ddStartTime;
+                                switch (recRule){
+                                  case 0:
+                                    addLesson(curDate, startTime);
+                                    break;
+                                  case 7:
+                                    while (curDate < semesterEndInMilliseconds){
+                                      addLesson(curDate, startTime);
+                                      curDate += (day * recRule);
+                                      startTime += (day * recRule);
+                                    }
+                                    break;
+                                  case 14:
+                                    while (curDate < semesterEndInMilliseconds){
+                                      addLesson(curDate, startTime);
+                                      curDate += (day * recRule);
+                                      startTime += (day * recRule);
+                                    }
+                                    break;
                                 }
                               }
-                              setState(() {});
+                              resetDropDownValues();
+                              setState(() {
+
+                              });
                             },
                           ),
                         )
@@ -529,8 +527,7 @@ class _CalendarPageState extends State<CalendarPage> {
   }
 
   bool _checkValues() {
-    return _ddStartTime > DateTime.now().millisecondsSinceEpoch &&
-    _ddLessonName != "" &&
+    return _ddLessonName != "" &&
     _ddGroupp != "" &&
     _ddCourse != "";
   }
@@ -579,18 +576,15 @@ class _CalendarPageState extends State<CalendarPage> {
   }
 
   void calendarTapped(CalendarTapDetails details) async {
-    // print("##############################");
-    // print(details.appointments![0].recurrenceRule);
-    // print(details.appointments![0].appointmentType);
-    // print(details.appointments);
-    // print("##############################");
+    if(details.targetElement == CalendarElement.calendarCell){
+      selectedDate = details.date!;
+    }
     if (details.targetElement == CalendarElement.appointment ||
         details.targetElement == CalendarElement.agenda && details.appointments!.isNotEmpty) {
       await _getGroupsFromDatabase();
       await _getLessonsListFromDatabase();
-        // if (details.appointments![0].recurrenceRule != null){
-          int id = await DatabaseHelper.instance.getLessonID(details.appointments![0].starttime);
-        // }
+      late int id;
+        id = await DatabaseHelper.instance.getLessonIDbyStartTime(details.appointments![0]);
         double width = MediaQuery.of(context).size.width;
         selectedGroup = groups[0];
         showDialog(
@@ -611,18 +605,18 @@ class _CalendarPageState extends State<CalendarPage> {
                               padding: EdgeInsets.all(0),
                               child: Text("Редактирование занятия"),
                             ),
+                            _buildDropDown(lessonsFromDB, selectedLesson, 0),
                             _title("Название занятия"),
-                            _buildDropDown(lessonsFromDB, selectedLesson),
+                            _buildDropDown(groups, selectedGroup, 1),
                             _title("Группа"),
-                            _buildDropDown(groups, selectedGroup),
+                            _buildDropDown(courses, selectedCourse, 2),
                             _title("Курс"),
-                            _buildDropDown(courses, selectedCourse),
+                            _buildDropDown(time, selectedTime, 3),
                             _title("Время начала"),
-                            _buildDropDown(time, selectedTime),
+                            _buildDropDown(type, selectedType, 4),
                             _title("Тип"),
-                            _buildDropDown(type, selectedType),
+                            _buildDropDown(["Нет", "Каждую неделю", "Каждые две недели"], selectedRR, 5),
                             _title("Дублирование"),
-                            _buildDropDown(["Нет", "Каждую неделю", "Каждые две недели"], "Нет"),
                             Padding(
                               padding: EdgeInsets.all(0),
                               child: TextFormField(
@@ -634,7 +628,9 @@ class _CalendarPageState extends State<CalendarPage> {
                                 },
                                 controller: _bdController,
                                 maxLength: 3,
-                                decoration: InputDecoration(labelText: "Корпус"),
+                                decoration: InputDecoration(labelText: "Корпус",
+                                    labelStyle: TextStyle(color: Color(lightGrey)
+                                    )),
                                 keyboardType: TextInputType.number,
                                 inputFormatters: <TextInputFormatter>[
                                   FilteringTextInputFormatter.digitsOnly
@@ -652,7 +648,9 @@ class _CalendarPageState extends State<CalendarPage> {
                                 },
                                 controller: _crController,
                                 maxLength: 5,
-                                decoration: InputDecoration(labelText: "Аудитория"),
+                                decoration: InputDecoration(labelText: "Аудитория",
+                                    labelStyle: TextStyle(color: Color(lightGrey)
+                                    )),
                                 keyboardType: TextInputType.number,
                                 inputFormatters: <TextInputFormatter>[
                                   FilteringTextInputFormatter.digitsOnly
@@ -682,20 +680,18 @@ class _CalendarPageState extends State<CalendarPage> {
                                       starttime: _ddStartTime,
                                       type: _ddType,
                                       state: 0,
-                                      recurrenceRule: '',
                                     );
+                                    if (!await DatabaseHelper.instance
+                                        .isLessonTimeInDataBase(lesson)) {
                                       DatabaseHelper.instance.updateLesson(lesson);
                                       resetDropDownValues();
+                                      // ScaffoldMessenger.of(context)
+                                      //     .showSnackBar(snackTemplate("Изменено"));
+                                    } else {
                                       ScaffoldMessenger.of(context)
-                                          .showSnackBar(const SnackBar(
-                                        content: Text('Изменено!'),
-                                        backgroundColor: Colors.blueGrey,
-                                        behavior: SnackBarBehavior.floating,
-                                        duration: Duration(milliseconds: 1200),
-                                        margin: EdgeInsets.symmetric(
-                                            vertical: 30.0, horizontal: 150.0),
-                                        elevation: 30,
-                                      ));
+                                          .showSnackBar(snackTemplate('Выберите другое время'));
+                                    }
+
                                   }
                                   setState(() {});
                                 },
@@ -728,8 +724,8 @@ class _CalendarPageState extends State<CalendarPage> {
       initialSelectedDate: DateTime.now(),
       firstDayOfWeek: 1,
       view: CalendarView.month,
-      dataSource: LessonDataSource(collection),
-      scheduleViewSettings: ScheduleViewSettings(
+      dataSource: LessonDataSource(collection), // dynamically updated information
+      scheduleViewSettings: ScheduleViewSettings( // some settings to diffetent views
         appointmentTextStyle: AppointmentStyle(),
       ),
       monthViewSettings: MonthViewSettings(
@@ -761,74 +757,66 @@ class _CalendarPageState extends State<CalendarPage> {
   }
 
   void deleteNote(CalendarLongPressDetails calendarLongPressDetails) {
-    showDialog(
-        context: context,
-        builder: (BuildContext context) {
-          return AlertDialog(
-            content: Stack(
-              clipBehavior: Clip.none,
-              children: <Widget>[
-                _xMark(),
-                Form(
-                  child: Column(
-                    mainAxisSize: MainAxisSize.min,
-                    children: <Widget>[
-                      const Padding(
-                        padding: EdgeInsets.all(8.0),
-                        child: Text("Удалить запись?"),
-                      ),
-                      Row(
-                        mainAxisAlignment: MainAxisAlignment.spaceBetween,
-                        children: <Widget>[
-                          Padding(
-                              padding: EdgeInsets.all(8.0),
-                              child: TextButton(
-                                onPressed: () {
-                                  if (calendarLongPressDetails.targetElement ==
-                                          CalendarElement.appointment ||
-                                      calendarLongPressDetails.targetElement ==
-                                          CalendarElement.agenda) {
-                                    final Lesson appointmentDetails =
-                                        calendarLongPressDetails
-                                            .appointments![0];
-                                    DatabaseHelper.instance
-                                        .removeLessonByDateAndTime(
-                                            appointmentDetails.date,
-                                            appointmentDetails.starttime);
-                                  }
-                                  setState(() {
+    if (calendarLongPressDetails.targetElement == CalendarElement.appointment){
+      showDialog(
+          context: context,
+          builder: (BuildContext context) {
+            return AlertDialog(
+              content: Stack(
+                clipBehavior: Clip.none,
+                children: <Widget>[
+                  _xMark(),
+                  Form(
+                    child: Column(
+                      mainAxisSize: MainAxisSize.min,
+                      children: <Widget>[
+                        const Padding(
+                          padding: EdgeInsets.all(8.0),
+                          child: Text("Удалить запись?"),
+                        ),
+                        Row(
+                          mainAxisAlignment: MainAxisAlignment.spaceBetween,
+                          children: <Widget>[
+                            Padding(
+                                padding: EdgeInsets.all(8.0),
+                                child: TextButton(
+                                  onPressed: () async {
+                                    if (calendarLongPressDetails.targetElement ==
+                                        CalendarElement.appointment ||
+                                        calendarLongPressDetails.targetElement ==
+                                            CalendarElement.agenda) {
+                                      final Lesson appointmentDetails =
+                                      calendarLongPressDetails
+                                          .appointments![0];
+                                      DatabaseHelper.instance
+                                          .removeLesson(await DatabaseHelper.instance.getLessonIDbyStartTime(appointmentDetails));
+                                    }
+                                    setState(() {
+                                      Navigator.of(context).pop();
+                                      // ScaffoldMessenger.of(context)
+                                      //     .showSnackBar(snackTemplate("Удалено"));
+                                    });
+                                  },
+                                  child: const Text("Удалить"),
+                                )),
+                            Padding(
+                                padding: EdgeInsets.all(8.0),
+                                child: TextButton(
+                                  onPressed: () {
                                     Navigator.of(context).pop();
-                                    ScaffoldMessenger.of(context)
-                                        .showSnackBar(const SnackBar(
-                                      content: Text('Запись удалена'),
-                                      backgroundColor: Colors.blueGrey,
-                                      behavior: SnackBarBehavior.floating,
-                                      duration: Duration(milliseconds: 1200),
-                                      margin: EdgeInsets.symmetric(
-                                          vertical: 30.0, horizontal: 150.0),
-                                      elevation: 30,
-                                    ));
-                                  });
-                                },
-                                child: const Text("Удалить"),
-                              )),
-                          Padding(
-                              padding: EdgeInsets.all(8.0),
-                              child: TextButton(
-                                onPressed: () {
-                                  Navigator.of(context).pop();
-                                },
-                                child: const Text("Отмена"),
-                              )),
-                        ],
-                      )
-                    ],
+                                  },
+                                  child: const Text("Отмена"),
+                                )),
+                          ],
+                        )
+                      ],
+                    ),
                   ),
-                ),
-              ],
-            ),
-          );
-        });
+                ],
+              ),
+            );
+          });
+    }
   }
 
   Padding datePicker() {
@@ -843,15 +831,18 @@ class _CalendarPageState extends State<CalendarPage> {
   }
 
   Widget _title(String title) {
-    return Padding(
-      padding: const EdgeInsets.only(left: 16.0, top: 16),
+    return Container(
+      // padding: const EdgeInsets.only(left: 16.0, top: 8),
       child: Column(
         crossAxisAlignment: CrossAxisAlignment.start,
         children: <Widget>[
           // SizedBox(height: 10.0),
           Text(
             title.toUpperCase(),
-            style: TextStyle(fontSize: 18.0),
+            style: TextStyle(
+              fontSize: 14.0,
+              color: Color(lightGrey),
+            ),
           ),
           Divider(
             color: Colors.transparent,
@@ -861,28 +852,60 @@ class _CalendarPageState extends State<CalendarPage> {
     );
   }
 
-  _buildDropDown(List<String> lessonsFromDB, String? selectedLesson) {
-    return Padding(
-      padding: EdgeInsets.all(0),
+  _buildDropDown(List<String> itemsList, String? selectedItem, int dropDownID) {
+    return SizedBox(
+      height: 43,
       child: DropdownButtonFormField<String>(
+        isExpanded: true,
         icon: Icon(Icons.keyboard_arrow_down),
-        decoration: InputDecoration(
-            border: OutlineInputBorder()),
-        value: selectedLesson,
-        items: lessonsFromDB
+        value: selectedItem,
+        items: itemsList
             .map((item) => DropdownMenuItem<String>(
           value: item,
           child: Text(item),
+          onTap: (){
+            setState(() {
+              switch (dropDownID) {
+                case 0: selectedLesson = item; break;
+                case 1: selectedGroup = item; break;
+                case 2: selectedCourse = item; break;
+                case 3: selectedTime = item; break;
+                case 4: selectedType = item; break;
+                case 5: selectedRR = item; break;
+              }
+              selectedItem = item;
+            });
+          }
         ))
             .toList(),
-        onChanged: (selectedLesson != null ||
-            selectedLesson!.trim() != "")
-            ? (item) =>
-            setState(() => selectedLesson = item)
-            : null,
+        onChanged: (item){}
       ),
     );
   }
+
+  _buildTextArea(TextEditingController controller, String label, int maxLen, bool kbType, bool inputFormatter) {
+    return Padding(
+      padding: EdgeInsets.all(0),
+      child: TextFormField(
+        validator: (value) {
+          if (value == null || value.isEmpty) {
+            return "Поле обязательно к заполнению";
+          }
+          return null;
+        },
+        controller: controller,
+        maxLength: maxLen,
+        decoration: InputDecoration(
+            labelText: label, labelStyle: TextStyle(color: Color(lightGrey)
+        )),
+        keyboardType: kbType ? TextInputType.text : TextInputType.number,
+        inputFormatters: inputFormatter ? <TextInputFormatter>[
+          FilteringTextInputFormatter.digitsOnly
+        ] : null
+      ),
+    );
+  }
+
 
   _xMark() {
     return Positioned(
@@ -899,6 +922,43 @@ class _CalendarPageState extends State<CalendarPage> {
       ),
     );
   }
+
+  SnackBar snackTemplate(String text) {
+    return SnackBar(
+      content: Text(text),
+      backgroundColor: Color(mainColor),
+      // behavior: SnackBarBehavior.floating,
+      duration: Duration(milliseconds: 1200),
+      // margin: EdgeInsets.symmetric(
+      //     vertical: 30.0, horizontal: 150.0),
+      // elevation: 30,
+    );
+  }
+
+  void addLesson(int date, int startTime) async {
+    Lesson lesson = Lesson(
+      name: _ddLessonName,
+      building: int.parse(_bdController.text),
+      classroom: int.parse(_crController.text),
+      groupp: _ddGroupp,
+      course: _ddCourse,
+      date: date,
+      starttime: startTime,
+      type: _ddType,
+      state: 0,
+    );
+    if (!await DatabaseHelper.instance
+        .isLessonTimeInDataBase(lesson)) {
+    DatabaseHelper.instance.insertLesson(lesson);
+      ScaffoldMessenger.of(context)
+                                      .showSnackBar(snackTemplate("Добавлено"));
+    } else {
+        ScaffoldMessenger.of(context)
+            .showSnackBar(snackTemplate('Выберите другое время'));
+      // print("$date - занято");
+                                }
+  }
+
 }
 
 class LessonDataSource extends CalendarDataSource {
@@ -922,10 +982,6 @@ class LessonDataSource extends CalendarDataSource {
         appointments![index].starttime + 600000 * 9);
   }
 
-  @override
-  String? getRecurrenceRule(int index) {
-    return appointments![index].recurrenceRule;
-  }
   @override
   Color getColor(int index) {
     return Color(mainColor);

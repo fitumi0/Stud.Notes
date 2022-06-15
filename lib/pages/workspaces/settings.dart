@@ -4,14 +4,15 @@ import 'package:file_picker/file_picker.dart';
 import 'package:flutter/material.dart';
 import 'package:flutter_proj/database/databaseHelper.dart';
 import 'package:flutter_proj/database/models/student.dart';
+import 'package:flutter_proj/pages/workspaces/themes.dart';
 
 import '../../database/models/groupp.dart';
 
+bool studentsTooltipShown = false;
 
-///
-/// TODO: ADD THEMES
-///
 class SettingsPage extends StatefulWidget {
+  const SettingsPage({Key? key}) : super(key: key);
+
   @override
   _SettingsPageState createState() => _SettingsPageState();
 }
@@ -28,7 +29,7 @@ class _SettingsPageState extends State<SettingsPage>
     return Scaffold(
       appBar: AppBar(
         leading: IconButton(
-          icon: Icon(Icons.keyboard_arrow_left),
+          icon: const Icon(Icons.keyboard_arrow_left),
           onPressed: () => Navigator.of(context).pop(),
         ),
         title: const Text('Настройки'),
@@ -44,8 +45,11 @@ class _SettingsPageState extends State<SettingsPage>
                 ElevatedButton(
                   style: ElevatedButton.styleFrom(
                     minimumSize: Size(width, 50),),
-                  child: Text("Загрузить студентов"),
-                  onPressed: () {
+                  child: const Text("Загрузить студентов", style: TextStyle(
+                    fontSize: 18
+                  ),),
+                  onPressed: () async {
+                    if(!studentsTooltipShown) { await _openToolTip();}
                     _openFileExplorer();
                   }, ),
                 SizedBox(
@@ -118,15 +122,80 @@ class _SettingsPageState extends State<SettingsPage>
       });
 
       ScaffoldMessenger.of(context).showSnackBar(
-          SnackBar(
+          const SnackBar(
             content: Text('Студенты успешно загружены'),
-            backgroundColor: Colors.blueGrey,
-            behavior: SnackBarBehavior.floating,
-            margin: EdgeInsets.symmetric(vertical: 30.0, horizontal: 50.0),
-            elevation: 30,
+            backgroundColor: Color(mainColor),
           )
       );
     }
+  }
+
+  _openToolTip() {
+    return showDialog(
+        context: context,
+        builder: (BuildContext context) {
+          double width = MediaQuery.of(context).size.width;
+          return AlertDialog(
+            content:SingleChildScrollView(
+              child: Column(
+                children: [
+                  Padding(padding: const EdgeInsets.all(4),
+                    child: _buildTitle("Пример форматирования"),),
+                  Padding(padding: const EdgeInsets.all(4),
+                    child: _buildText("Имя Фамилия Группа-Курс Связь"),),
+                  Padding(padding: const EdgeInsets.all(4),
+                    child: _buildText("Например"),),
+                  Padding(padding: const EdgeInsets.all(4),
+                    child: _buildText("Иван Иванов ИВТ-2 ivanov@mail.ru"),),
+                  Padding(padding: const EdgeInsets.all(4),
+                    child: _buildText("Петр Петров ПИ-4 TG:@petroVVV"),),
+                  Padding(padding: const EdgeInsets.all(4),
+                    child: _buildText("### ### ##-# @###"),),
+                  Padding(padding: const EdgeInsets.all(4),
+                    child: TextButton(
+                        style: TextButton.styleFrom(
+                          minimumSize: Size(width, 50),
+                        ),
+                        child: const Text("Понятно"),
+                        onPressed: () {
+                          Navigator.of(context).pop();
+                          studentsTooltipShown = true;
+                        }
+                    ),),
+                ],
+              ),
+            )
+
+          );
+        });
+  }
+
+  _buildTitle(String title) {
+    return Column(
+      crossAxisAlignment: CrossAxisAlignment.start,
+      children: <Widget>[
+        Text(
+              title.toUpperCase(),
+              style: const TextStyle(fontSize: 18.0),
+          ),
+      ],
+    );
+  }
+
+  _buildText(String data) {
+    return Row(
+      crossAxisAlignment: CrossAxisAlignment.start,
+      children: <Widget>[
+    Flexible(
+    child: Text(data,
+          style: const TextStyle(
+            fontFamily: "Montserrat-Regular",
+            fontSize: 16.0,
+          ),
+        ),
+      ),
+      ],
+    );
   }
 
 
